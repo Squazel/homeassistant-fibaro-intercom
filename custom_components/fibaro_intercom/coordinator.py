@@ -6,19 +6,18 @@ import asyncio
 import json
 import logging
 import ssl
-from typing import Any, Callable
+from typing import Any
 
 import websockets
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from websockets.exceptions import ConnectionClosed, InvalidURI
+from websockets.exceptions import ConnectionClosed
 
 from .const import (
     ATTR_BUTTON,
     ATTR_RELAY,
     ATTR_STATE,
-    ATTR_TIMEOUT,
     DOMAIN,
     EVENT_DOORBELL_PRESSED,
     METHOD_BUTTON_STATE_CHANGED,

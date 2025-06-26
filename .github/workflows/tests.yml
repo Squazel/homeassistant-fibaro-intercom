@@ -52,6 +52,7 @@ jobs:
         python -m pytest ../../tests/ -v --cov=client --cov-report=xml:../../tests/coverage.xml --cov-report=term-missing
     
     - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.13'
       uses: codecov/codecov-action@v3
       with:
         file: ./tests/coverage.xml

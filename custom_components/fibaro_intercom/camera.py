@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
-import aiohttp
 from aiohttp import BasicAuth
 from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
@@ -113,4 +111,7 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             return None
 
         # Return MJPEG stream URL with authentication
-        return f"http://{self.coordinator.username}:{self.coordinator.password}@{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
+        return (
+            f"http://{self.coordinator.username}:{self.coordinator.password}@"
+            f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
+        )

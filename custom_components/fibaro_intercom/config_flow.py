@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-import websockets
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DEFAULT_PORT, DOMAIN
 from .coordinator import FibaroIntercomCoordinator

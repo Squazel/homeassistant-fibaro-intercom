@@ -1,7 +1,7 @@
 """Shared test fixtures and utilities."""
 
 import json
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock
 
 import pytest
 

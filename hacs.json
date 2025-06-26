@@ -1,9 +1,4 @@
 {
   "name": "Fibaro Intercom",
-  "content_in_root": true,
-  "domains": ["intercom"],
-  "country": [],
-  "homeassistant": "2022.0.0",
-  "iot_class": "local_push",
-  "render_readme": true
+  "homeassistant": "2022.0.0"
 }
