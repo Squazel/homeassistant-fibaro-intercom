@@ -15,7 +15,7 @@ sys.path.insert(
     ),
 )
 
-from client import FibaroIntercomClient, FibaroIntercomConnectionError
+from client import FibaroIntercomClient, FibaroIntercomConnectionError  # noqa: E402
 
 
 class TestFibaroIntercomClient:

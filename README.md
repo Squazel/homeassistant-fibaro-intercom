@@ -168,7 +168,6 @@ A test script is provided to diagnose connection issues independently of Home As
 $env:FIBARO_HOST='192.168.1.100'
 $env:FIBARO_USERNAME='admin'
 $env:FIBARO_PASSWORD='your_password'
-$env:FIBARO_PORT='8081'  # Optional, defaults to 8081
 python test_connection.py
 ```
 
@@ -177,7 +176,6 @@ python test_connection.py
 export FIBARO_HOST='192.168.1.100'
 export FIBARO_USERNAME='admin'
 export FIBARO_PASSWORD='your_password'
-export FIBARO_PORT='8081'  # Optional, defaults to 8081
 python test_connection.py
 ```
 
