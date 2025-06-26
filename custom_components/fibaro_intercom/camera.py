@@ -15,8 +15,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (CAMERA_LIVE_MJPEG, CAMERA_PORT, CAMERA_STILL_JPEG, DOMAIN,
-                    ENTITY_CAMERA)
+from .const import (
+    CAMERA_LIVE_MJPEG,
+    CAMERA_PORT,
+    CAMERA_STILL_JPEG,
+    DOMAIN,
+    ENTITY_CAMERA,
+)
 from .coordinator import FibaroIntercomCoordinator
 
 _LOGGER = logging.getLogger(__name__)

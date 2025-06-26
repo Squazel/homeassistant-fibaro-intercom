@@ -3,6 +3,7 @@
 import asyncio
 import json
 import os
+
 # Import the client without Home Assistant dependencies
 import sys
 from unittest.mock import AsyncMock, Mock, patch
@@ -16,8 +17,12 @@ sys.path.insert(
     ),
 )
 
-from client import (FibaroIntercomAuthError, FibaroIntercomClient,
-                    FibaroIntercomConnectionError, FibaroIntercomError)
+from client import (
+    FibaroIntercomAuthError,
+    FibaroIntercomClient,
+    FibaroIntercomConnectionError,
+    FibaroIntercomError,
+)
 
 
 class TestFibaroIntercomClient:

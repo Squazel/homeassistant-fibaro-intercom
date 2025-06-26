@@ -14,10 +14,19 @@ from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from websockets.exceptions import ConnectionClosed, InvalidURI
 
-from .const import (ATTR_BUTTON, ATTR_RELAY, ATTR_STATE, ATTR_TIMEOUT, DOMAIN,
-                    EVENT_DOORBELL_PRESSED, METHOD_BUTTON_STATE_CHANGED,
-                    METHOD_LOGIN, METHOD_RELAY_OPEN,
-                    METHOD_RELAY_STATE_CHANGED, WEBSOCKET_PATH)
+from .const import (
+    ATTR_BUTTON,
+    ATTR_RELAY,
+    ATTR_STATE,
+    ATTR_TIMEOUT,
+    DOMAIN,
+    EVENT_DOORBELL_PRESSED,
+    METHOD_BUTTON_STATE_CHANGED,
+    METHOD_LOGIN,
+    METHOD_RELAY_OPEN,
+    METHOD_RELAY_STATE_CHANGED,
+    WEBSOCKET_PATH,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
