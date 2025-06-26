@@ -1,0 +1,23 @@
+open_relay:
+  name: Open relay
+  description: Opens a relay on the FIBARO Intercom for a specified duration.
+  fields:
+    relay:
+      name: Relay
+      description: The relay number to open (0 or 1).
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1
+          mode: box
+    timeout:
+      name: Timeout
+      description: Duration in milliseconds to keep the relay open (optional).
+      required: false
+      selector:
+        number:
+          min: 250
+          max: 30000
+          unit_of_measurement: "ms"
+          mode: box

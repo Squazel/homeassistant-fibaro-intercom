@@ -1,0 +1,25 @@
+# Development and testing requirements
+# Install with: pip install -r requirements.txt
+
+# Core runtime dependencies (same as manifest.json requirements)
+websockets>=11.0
+
+# Additional runtime dependencies for full functionality
+aiohttp>=3.8.0
+yarl>=1.8.0
+
+# Testing framework
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+pytest-cov>=4.0.0
+
+# Development and code quality tools
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Optional: Uncomment if you want full Home Assistant types for development
+# Note: This is a large dependency and not needed for core functionality testing
+# homeassistant>=2024.1.0

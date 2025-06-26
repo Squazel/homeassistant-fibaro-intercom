@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up FIBARO Intercom",
+        "description": "Enter the connection details for your FIBARO Intercom device.",
+        "data": {
+          "host": "Host",
+          "port": "Port", 
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the intercom. Please check your network connection and device settings.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This FIBARO Intercom device is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "FIBARO Intercom Options",
+        "description": "Configure optional settings for your FIBARO Intercom.",
+        "data": {
+          "port": "Port",
+          "username": "Username", 
+          "password": "Password"
+        }
+      }
+    }
+  }
+}
