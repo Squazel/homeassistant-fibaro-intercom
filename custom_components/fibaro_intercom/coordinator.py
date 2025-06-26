@@ -76,7 +76,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     def _get_device_id(self) -> str:
         """Get the device ID for this coordinator."""
         # This will be set by the entity platform during setup
-        return getattr(self, '_device_id', f'fibaro_intercom_{self.host}')
+        return getattr(self, "_device_id", f"fibaro_intercom_{self.host}")
 
     def set_device_id(self, device_id: str) -> None:
         """Set the device ID for this coordinator."""
@@ -145,9 +145,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         """Connect WebSocket and authenticate."""
         uri = f"wss://{self.host}:{self.port}{WEBSOCKET_PATH}"
         # Create SSL context in executor to avoid blocking the event loop
-        ssl_context = await self.hass.async_add_executor_job(
-            self._create_ssl_context
-        )
+        ssl_context = await self.hass.async_add_executor_job(self._create_ssl_context)
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
@@ -163,7 +161,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         self.connected = True
         _LOGGER.info("Connected to FIBARO Intercom at %s:%s", self.host, self.port)
-        
+
         # Update coordinator data with connection status
         self.async_set_updated_data(
             {
@@ -310,7 +308,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         self.connected = False
         self.token = None
-        
+
         # Update coordinator data to reflect disconnection
         self.async_set_updated_data(
             {

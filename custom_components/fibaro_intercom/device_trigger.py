@@ -10,7 +10,8 @@ from homeassistant.components.homeassistant.triggers import event as event_trigg
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE_ID, CONF_DOMAIN, CONF_PLATFORM, CONF_TYPE
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
 from homeassistant.helpers.typing import ConfigType
 
@@ -33,7 +34,7 @@ async def async_get_triggers(
     """List device triggers for FIBARO Intercom devices."""
     device_registry = dr.async_get(hass)
     device = device_registry.async_get(device_id)
-    
+
     if not device or not any(
         identifier[0] == DOMAIN for identifier in device.identifiers
     ):
@@ -61,7 +62,7 @@ async def async_attach_trigger(
     """Attach a trigger."""
     device_registry = dr.async_get(hass)
     device = device_registry.async_get(config[CONF_DEVICE_ID])
-    
+
     if not device:
         return lambda: None
 
@@ -71,7 +72,7 @@ async def async_attach_trigger(
         if identifier[0] == DOMAIN:
             entry_id = identifier[1]
             break
-    
+
     if not entry_id:
         return lambda: None
 

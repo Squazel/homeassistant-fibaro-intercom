@@ -25,6 +25,7 @@ async def async_setup_entry(
 
     # Create device registry entry for device triggers
     from homeassistant.helpers import device_registry as dr
+
     device_registry = dr.async_get(hass)
     device = device_registry.async_get_or_create(
         config_entry_id=config_entry.entry_id,
