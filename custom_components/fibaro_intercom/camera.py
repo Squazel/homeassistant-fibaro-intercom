@@ -52,10 +52,15 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         super().__init__(coordinator)
         self._config_entry = config_entry
         self._attr_unique_id = f"{config_entry.entry_id}_{ENTITY_CAMERA}"
-        self._attr_name = "Camera"
+        self._attr_name = "FIBARO Intercom Camera"
+        
+        # Required attributes for Home Assistant camera
+        self.access_tokens: list[str] = []
+        self._webrtc_provider = None
+        
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},
-            "name": f"FIBARO Intercom ({coordinator.host})",
+            "name": "FIBARO Intercom",
             "manufacturer": "FIBARO",
             "model": "Intercom",
             "sw_version": "1.0",

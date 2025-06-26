@@ -46,10 +46,10 @@ class FibaroIntercomRelaySwitch(CoordinatorEntity, SwitchEntity):
         self._attr_unique_id = (
             f"{config_entry.entry_id}_{ENTITY_RELAY_PREFIX}{relay_number}"
         )
-        self._attr_name = f"Relay {relay_number}"
+        self._attr_name = f"FIBARO Intercom Relay {relay_number}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},
-            "name": f"FIBARO Intercom ({coordinator.host})",
+            "name": "FIBARO Intercom",
             "manufacturer": "FIBARO",
             "model": "Intercom",
             "sw_version": "1.0",

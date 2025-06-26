@@ -59,16 +59,18 @@ After setup, you can modify these options:
 ## Entities Created
 
 ### Binary Sensors
-- **Connection Status**: Shows if the integration is connected to the intercom
-- **Doorbell**: Activated when doorbell is pressed (auto-resets after 1 second)
+- **FIBARO Intercom Connection Status**: Shows if the integration is connected to the intercom
 
 ### Switches
-- **Relay 0**: Control for the first relay
-- **Relay 1**: Control for the second relay
+- **FIBARO Intercom Relay 0**: Control for the first relay
+- **FIBARO Intercom Relay 1**: Control for the second relay
 
 ### Camera
-- **Live Stream**: Real-time video feed from the intercom camera
+- **FIBARO Intercom Camera**: Real-time video feed from the intercom camera
 - **Still Images**: Snapshot capability
+
+### Device Triggers
+- **Doorbell Pressed**: Fires when the doorbell button is pressed (recommended for automations)
 
 ## Services
 
@@ -92,13 +94,28 @@ data:
 
 ### `fibaro_intercom.doorbell_pressed`
 
-Fired when the doorbell button is pressed.
+Fired when the doorbell button is pressed. This event triggers device triggers for easy automation setup.
 
 **Event Data:**
 - `button`: Button number that was pressed
-- `timestamp`: When the event occurred
+- `device_id`: Device ID for the intercom
 
-**Example Automation:**
+**Example Automation (using Device Trigger):**
+```yaml
+automation:
+  - alias: "Doorbell Notification"
+    trigger:
+      platform: device
+      device_id: [your_device_id]
+      domain: fibaro_intercom
+      type: doorbell_pressed
+    action:
+      service: notify.mobile_app_your_phone
+      data:
+        message: "Someone is at the door!"
+```
+
+**Alternative (using Event Trigger):**
 ```yaml
 automation:
   - alias: "Doorbell Notification"

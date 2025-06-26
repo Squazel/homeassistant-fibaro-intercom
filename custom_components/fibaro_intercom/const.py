@@ -27,7 +27,6 @@ CAMERA_PORT = 8080
 
 # Entity names
 ENTITY_CONNECTION_STATUS = "connection_status"
-ENTITY_DOORBELL = "doorbell"
 ENTITY_RELAY_PREFIX = "relay_"
 ENTITY_CAMERA = "camera"
 

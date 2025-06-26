@@ -56,7 +56,6 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         self.token: str | None = None
         self.connected = False
         self.relay_states: dict[int, bool] = {0: False, 1: False}
-        self.doorbell_pressed = False
         self._message_id = 0
         self._reconnect_task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
@@ -74,11 +73,27 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         self._message_id += 1
         return self._message_id
 
+    def _get_device_id(self) -> str:
+        """Get the device ID for this coordinator."""
+        # This will be set by the entity platform during setup
+        return getattr(self, '_device_id', f'fibaro_intercom_{self.host}')
+
+    def set_device_id(self, device_id: str) -> None:
+        """Set the device ID for this coordinator."""
+        self._device_id = device_id
+
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        """Create SSL context - called in executor to avoid blocking."""
+        return ssl.create_default_context()
+
     async def async_test_connection(self) -> bool:
         """Test connection to the intercom."""
         try:
             uri = f"wss://{self.host}:{self.port}{WEBSOCKET_PATH}"
-            ssl_context = ssl.create_default_context()
+            # Create SSL context in executor to avoid blocking the event loop
+            ssl_context = await self.hass.async_add_executor_job(
+                self._create_ssl_context
+            )
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
@@ -129,7 +144,10 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     async def _async_connect_websocket(self) -> None:
         """Connect WebSocket and authenticate."""
         uri = f"wss://{self.host}:{self.port}{WEBSOCKET_PATH}"
-        ssl_context = ssl.create_default_context()
+        # Create SSL context in executor to avoid blocking the event loop
+        ssl_context = await self.hass.async_add_executor_job(
+            self._create_ssl_context
+        )
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
@@ -145,6 +163,14 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         self.connected = True
         _LOGGER.info("Connected to FIBARO Intercom at %s:%s", self.host, self.port)
+        
+        # Update coordinator data with connection status
+        self.async_set_updated_data(
+            {
+                "connected": True,
+                "relay_states": self.relay_states,
+            }
+        )
 
     async def _async_login(self) -> None:
         """Authenticate with the intercom."""
@@ -187,6 +213,13 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         except ConnectionClosed:
             _LOGGER.warning("WebSocket connection closed")
             self.connected = False
+            # Update coordinator data with disconnection status
+            self.async_set_updated_data(
+                {
+                    "connected": False,
+                    "relay_states": self.relay_states,
+                }
+            )
             if not self._stop_event.is_set():
                 # Start reconnection if not stopping
                 if not self._reconnect_task or self._reconnect_task.done():
@@ -229,37 +262,14 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         if state:  # Button pressed
             _LOGGER.debug("Doorbell button %s pressed", button)
 
-            # Fire Home Assistant event
+            # Fire Home Assistant event for device triggers
             self.hass.bus.async_fire(
                 EVENT_DOORBELL_PRESSED,
                 {
                     ATTR_BUTTON: button,
-                    "device_id": f"fibaro_intercom_{self.host}",
+                    "device_id": self._get_device_id(),
                 },
             )
-
-            # Update doorbell sensor state
-            self.doorbell_pressed = True
-            self.async_set_updated_data(
-                {
-                    "doorbell_pressed": True,
-                    "relay_states": self.relay_states,
-                    "connected": self.connected,
-                }
-            )
-
-            # Reset doorbell state after 1 second
-            def reset_doorbell():
-                self.doorbell_pressed = False
-                self.async_set_updated_data(
-                    {
-                        "doorbell_pressed": False,
-                        "relay_states": self.relay_states,
-                        "connected": self.connected,
-                    }
-                )
-
-            self.hass.loop.call_later(1.0, reset_doorbell)
 
     async def _async_reconnect_loop(self) -> None:
         """Reconnect with exponential backoff."""
@@ -300,6 +310,14 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         self.connected = False
         self.token = None
+        
+        # Update coordinator data to reflect disconnection
+        self.async_set_updated_data(
+            {
+                "connected": False,
+                "relay_states": self.relay_states,
+            }
+        )
 
     async def async_open_relay(self, relay: int, timeout: int | None = None) -> bool:
         """Open a relay."""
@@ -343,5 +361,4 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         return {
             "connected": self.connected,
             "relay_states": self.relay_states,
-            "doorbell_pressed": self.doorbell_pressed,
         }

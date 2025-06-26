@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, ENTITY_CONNECTION_STATUS, ENTITY_DOORBELL
+from .const import DOMAIN, ENTITY_CONNECTION_STATUS
 from .coordinator import FibaroIntercomCoordinator
 
 
@@ -23,9 +23,21 @@ async def async_setup_entry(
     """Set up FIBARO Intercom binary sensors."""
     coordinator: FibaroIntercomCoordinator = hass.data[DOMAIN][config_entry.entry_id]
 
+    # Create device registry entry for device triggers
+    from homeassistant.helpers import device_registry as dr
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(DOMAIN, config_entry.entry_id)},
+        name="FIBARO Intercom",
+        manufacturer="FIBARO",
+        model="Intercom",
+        sw_version="1.0",
+    )
+    coordinator.set_device_id(device.id)
+
     entities = [
         FibaroIntercomConnectionSensor(coordinator, config_entry),
-        FibaroIntercomDoorbellSensor(coordinator, config_entry),
     ]
 
     async_add_entities(entities)
@@ -50,7 +62,7 @@ class FibaroIntercomBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_device_class = device_class
         self._attr_device_info = {
             "identifiers": {(DOMAIN, config_entry.entry_id)},
-            "name": f"FIBARO Intercom ({coordinator.host})",
+            "name": "FIBARO Intercom",
             "manufacturer": "FIBARO",
             "model": "Intercom",
             "sw_version": "1.0",
@@ -70,7 +82,7 @@ class FibaroIntercomConnectionSensor(FibaroIntercomBinarySensor):
             coordinator,
             config_entry,
             ENTITY_CONNECTION_STATUS,
-            "Connection Status",
+            "FIBARO Intercom Connection Status",
             BinarySensorDeviceClass.CONNECTIVITY,
         )
 
@@ -87,39 +99,3 @@ class FibaroIntercomConnectionSensor(FibaroIntercomBinarySensor):
     def available(self) -> bool:
         """Return True if entity is available."""
         return True  # This sensor shows connection status, so it's always available
-
-
-class FibaroIntercomDoorbellSensor(FibaroIntercomBinarySensor):
-    """Binary sensor for FIBARO Intercom doorbell."""
-
-    def __init__(
-        self,
-        coordinator: FibaroIntercomCoordinator,
-        config_entry: ConfigEntry,
-    ) -> None:
-        """Initialize the doorbell sensor."""
-        super().__init__(
-            coordinator,
-            config_entry,
-            ENTITY_DOORBELL,
-            "Doorbell",
-            BinarySensorDeviceClass.OCCUPANCY,
-        )
-
-    @property
-    def is_on(self) -> bool:
-        """Return True if doorbell is pressed."""
-        return (
-            self.coordinator.data.get("doorbell_pressed", False)
-            if self.coordinator.data
-            else False
-        )
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return (
-            self.coordinator.data.get("connected", False)
-            if self.coordinator.data
-            else False
-        )
