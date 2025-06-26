@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, ENTITY_CONNECTION_STATUS
+from .const import DOMAIN, ENTITY_CONNECTION_STATUS, ENTITY_RELAY_PREFIX
 from .coordinator import FibaroIntercomCoordinator
 
 
@@ -38,6 +38,8 @@ async def async_setup_entry(
 
     entities = [
         FibaroIntercomConnectionSensor(coordinator, config_entry),
+        FibaroIntercomRelaySensor(coordinator, config_entry, 0),
+        FibaroIntercomRelaySensor(coordinator, config_entry, 1),
     ]
 
     async_add_entities(entities)
@@ -99,3 +101,39 @@ class FibaroIntercomConnectionSensor(FibaroIntercomBinarySensor):
     def available(self) -> bool:
         """Return True if entity is available."""
         return True  # This sensor shows connection status, so it's always available
+
+
+class FibaroIntercomRelaySensor(FibaroIntercomBinarySensor):
+    """Binary sensor for FIBARO Intercom relay state."""
+
+    def __init__(
+        self,
+        coordinator: FibaroIntercomCoordinator,
+        config_entry: ConfigEntry,
+        relay_number: int,
+    ) -> None:
+        super().__init__(
+            coordinator,
+            config_entry,
+            f"{ENTITY_RELAY_PREFIX}{relay_number}",
+            f"FIBARO Intercom Relay {relay_number}",
+            BinarySensorDeviceClass.POWER,
+        )
+        self._relay_number = relay_number
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if relay is on (as reported by the intercom)."""
+        if not self.coordinator.data:
+            return False
+        relay_states = self.coordinator.data.get("relay_states", {})
+        return relay_states.get(self._relay_number, False)
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available (connected to intercom)."""
+        return (
+            self.coordinator.data.get("connected", False)
+            if self.coordinator.data
+            else False
+        )
