@@ -28,6 +28,7 @@ A custom Home Assistant integration for controlling and monitoring FIBARO Interc
 6. Select "Integration" as the category
 7. Click "Add" and close the dialog
 8. Locate Fibaro Intercom in the list of repositories and Download it
+9. Restart Home Assistant
 
 ### Manual Installation
 
@@ -156,6 +157,37 @@ wss://<IP_ADDRESS>:<PORT>/wsock
 2. **Verify Credentials**: Confirm username/password are correct
 3. **Check Port**: Default WebSocket port is 8081
 4. **TLS Issues**: Try disabling TLS verification if using self-signed certificates
+
+### Testing Connection
+
+A test script is provided to diagnose connection issues independently of Home Assistant:
+
+**Using Environment Variables (Recommended):**
+```powershell
+# Windows PowerShell
+$env:FIBARO_HOST='192.168.1.100'
+$env:FIBARO_USERNAME='admin'
+$env:FIBARO_PASSWORD='your_password'
+$env:FIBARO_PORT='8081'  # Optional, defaults to 8081
+python test_connection.py
+```
+
+```bash
+# Linux/macOS
+export FIBARO_HOST='192.168.1.100'
+export FIBARO_USERNAME='admin'
+export FIBARO_PASSWORD='your_password'
+export FIBARO_PORT='8081'  # Optional, defaults to 8081
+python test_connection.py
+```
+
+**Alternative:** Edit the script directly and replace the placeholder values with your intercom details.
+
+The test script will:
+- ✅ Test WebSocket connectivity
+- ✅ Verify authentication 
+- ✅ Provide detailed error messages
+- ✅ Confirm the integration should work
 
 ### Debugging
 

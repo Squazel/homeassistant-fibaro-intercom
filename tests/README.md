@@ -182,6 +182,31 @@ pre-commit install
 
 ## Manual Testing
 
+### Connection Test Script
+
+A standalone test script (`test_connection.py`) is provided to test intercom connectivity without Home Assistant:
+
+**Using Environment Variables (Recommended):**
+```powershell
+# Windows PowerShell
+$env:FIBARO_HOST='192.168.1.100'
+$env:FIBARO_USERNAME='your_username'
+$env:FIBARO_PASSWORD='your_password'
+$env:FIBARO_PORT='8081'  # Optional, defaults to 8081
+python test_connection.py
+```
+
+```bash
+# Linux/macOS
+export FIBARO_HOST='192.168.1.100'
+export FIBARO_USERNAME='your_username'
+export FIBARO_PASSWORD='your_password'
+export FIBARO_PORT='8081'  # Optional, defaults to 8081
+python test_connection.py
+```
+
+The test script will verify WebSocket connectivity and authentication before you attempt to configure the Home Assistant integration.
+
 ### FIBARO API Documentation
 
 For complete API reference, consult the [FIBARO Intercom API Documentation](https://manuals.fibaro.com/knowledge-base-browse/intercom-api/).
