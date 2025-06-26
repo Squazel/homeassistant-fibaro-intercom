@@ -26,8 +26,8 @@ A custom Home Assistant integration for controlling and monitoring FIBARO Interc
 4. Select "Custom repositories"
 5. Add this repository URL: `https://github.com/Squazel/homeassistant-fibaro-intercom`
 6. Select "Integration" as the category
-7. Click "Install"
-8. Restart Home Assistant
+7. Click "Add" and close the dialog
+8. Locate Fibaro Intercom in the list of repositories and Download it
 
 ### Manual Installation
 
