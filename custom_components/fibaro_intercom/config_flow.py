@@ -8,7 +8,7 @@ from typing import Any
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 
 from .const import DEFAULT_PORT, DOMAIN
@@ -19,7 +19,6 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): cv.string,
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
     }
@@ -39,9 +38,9 @@ class FibaroIntercomConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST]
-            port = user_input[CONF_PORT]
             username = user_input[CONF_USERNAME]
             password = user_input[CONF_PASSWORD]
+            port = DEFAULT_PORT  # Always use default port
 
             # Set unique ID to prevent multiple entries for same device
             await self.async_set_unique_id(f"{host}:{port}")
@@ -56,7 +55,11 @@ class FibaroIntercomConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 return self.async_create_entry(
                     title=f"FIBARO Intercom ({host})",
-                    data=user_input,
+                    data={
+                        CONF_HOST: host,
+                        CONF_USERNAME: username,
+                        CONF_PASSWORD: password,
+                    },
                 )
             except ConnectionError:
                 errors["base"] = "cannot_connect"
@@ -95,10 +98,6 @@ class FibaroIntercomOptionsFlowHandler(OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(
-                        CONF_PORT,
-                        default=self.config_entry.data.get(CONF_PORT, DEFAULT_PORT),
-                    ): cv.port,
                     vol.Optional(
                         CONF_USERNAME,
                         default=self.config_entry.data.get(CONF_USERNAME, ""),

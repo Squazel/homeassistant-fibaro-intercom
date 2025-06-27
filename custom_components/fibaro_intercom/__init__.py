@@ -9,13 +9,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
-    CONF_PORT,
     CONF_USERNAME,
     Platform,
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 
-from .const import ATTR_RELAY, ATTR_TIMEOUT, DOMAIN
+from .const import ATTR_RELAY, ATTR_TIMEOUT, DOMAIN, DEFAULT_PORT
 from .coordinator import FibaroIntercomCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,9 +41,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Get configuration data
     host = entry.data[CONF_HOST]
-    port = entry.data[CONF_PORT]
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    port = DEFAULT_PORT  # Always use default port
 
     # Create coordinator
     coordinator = FibaroIntercomCoordinator(hass, host, port, username, password)
