@@ -27,19 +27,17 @@ class FibaroIntercomCard extends HTMLElement {
       // Required
       camera_entity: config.camera_entity,
       
-      // Optional with defaults
-      relay_0_entity: config.relay_0_entity || 'switch.fibaro_intercom_relay_0',
-      relay_1_entity: config.relay_1_entity || 'switch.fibaro_intercom_relay_1',
-      door_label: config.door_label || 'Door',
-      gate_label: config.gate_label || 'Gate',
+      // Optional with defaults - these are binary sensors that show relay state
+      relay_0_entity: config.relay_0_entity || 'binary_sensor.fibaro_intercom_relay_0',
+      relay_1_entity: config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1',
+      relay_0_label: config.relay_0_label || 'Relay 0',
+      relay_1_label: config.relay_1_label || 'Relay 1',
       
       // Camera options
       show_live_stream: config.show_live_stream !== false, // default true
       still_refresh_interval: config.still_refresh_interval || 30, // seconds
       
-      // Custom icons/images
-      door_icon: config.door_icon || 'mdi:door',
-      gate_icon: config.gate_icon || 'mdi:gate',
+      // Custom icons/images (fallbacks if entity doesn't have icon)
       camera_icon: config.camera_icon || 'mdi:camera',
       
       // Styling
@@ -206,12 +204,12 @@ class FibaroIntercomCard extends HTMLElement {
         <div class="controls">
           <div class="relay-controls">
             <button class="relay-button" id="door-button">
-              <ha-icon icon="${this._config.door_icon}" class="icon"></ha-icon>
-              ${this._config.door_label}
+              <ha-icon id="door-icon" icon="mdi:door" class="icon"></ha-icon>
+              ${this._config.relay_0_label}
             </button>
             <button class="relay-button" id="gate-button">
-              <ha-icon icon="${this._config.gate_icon}" class="icon"></ha-icon>
-              ${this._config.gate_label}
+              <ha-icon id="gate-icon" icon="mdi:gate" class="icon"></ha-icon>
+              ${this._config.relay_1_label}
             </button>
           </div>
           
@@ -241,6 +239,12 @@ class FibaroIntercomCard extends HTMLElement {
     cameraImage.addEventListener('click', () => this._showCameraDialog());
   }
 
+  _getEntityIcon(entityId) {
+    if (!this._hass || !entityId) return null;
+    const entity = this._hass.states[entityId];
+    return entity?.attributes?.icon;
+  }
+
   _updateStates() {
     if (!this._hass) return;
 
@@ -248,6 +252,7 @@ class FibaroIntercomCard extends HTMLElement {
     const statusIndicator = this.shadowRoot.getElementById('status-indicator');
     const cameraEntity = this._hass.states[this._config.camera_entity];
     const relay0Entity = this._hass.states[this._config.relay_0_entity];
+    const relay1Entity = this._hass.states[this._config.relay_1_entity];
     
     if (cameraEntity && cameraEntity.state !== 'unavailable') {
       statusIndicator.classList.add('connected');
@@ -261,12 +266,34 @@ class FibaroIntercomCard extends HTMLElement {
     // Update relay button states
     const doorButton = this.shadowRoot.getElementById('door-button');
     const gateButton = this.shadowRoot.getElementById('gate-button');
+    const doorIcon = this.shadowRoot.getElementById('door-icon');
+    const gateIcon = this.shadowRoot.getElementById('gate-icon');
+    
+    // Update icons from entity attributes
+    const relay0Icon = this._getEntityIcon(this._config.relay_0_entity) || 'mdi:door';
+    const relay1Icon = this._getEntityIcon(this._config.relay_1_entity) || 'mdi:gate';
+    
+    if (doorIcon) doorIcon.setAttribute('icon', relay0Icon);
+    if (gateIcon) gateIcon.setAttribute('icon', relay1Icon);
     
     const relay0Available = relay0Entity && relay0Entity.state !== 'unavailable';
-    const relay1Available = this._hass.states[this._config.relay_1_entity]?.state !== 'unavailable';
+    const relay1Available = relay1Entity && relay1Entity.state !== 'unavailable';
     
     doorButton.disabled = !relay0Available;
     gateButton.disabled = !relay1Available;
+    
+    // Update button appearance based on relay state (on = relay is open)
+    if (relay0Entity && relay0Entity.state === 'on') {
+      doorButton.style.background = 'var(--success-color)';
+    } else {
+      doorButton.style.background = 'var(--primary-color)';
+    }
+    
+    if (relay1Entity && relay1Entity.state === 'on') {
+      gateButton.style.background = 'var(--success-color)';
+    } else {
+      gateButton.style.background = 'var(--primary-color)';
+    }
   }
 
   _updateCameraImage() {
@@ -389,10 +416,10 @@ class FibaroIntercomCard extends HTMLElement {
   static getStubConfig() {
     return {
       camera_entity: 'camera.fibaro_intercom_camera',
-      relay_0_entity: 'switch.fibaro_intercom_relay_0',
-      relay_1_entity: 'switch.fibaro_intercom_relay_1',
-      door_label: 'Door',
-      gate_label: 'Gate'
+      relay_0_entity: 'binary_sensor.fibaro_intercom_relay_0',
+      relay_1_entity: 'binary_sensor.fibaro_intercom_relay_1',
+      relay_0_label: 'Relay 0',
+      relay_1_label: 'Relay 1'
     };
   }
 }
@@ -451,7 +478,7 @@ class FibaroIntercomCardEditor extends HTMLElement {
           <label>Relay 0 Entity (Door)</label>
           <ha-textfield 
             id="relay_0_entity" 
-            .value="${this._config.relay_0_entity || 'switch.fibaro_intercom_relay_0'}"
+            .value="${this._config.relay_0_entity || 'binary_sensor.fibaro_intercom_relay_0'}"
           ></ha-textfield>
         </div>
         
@@ -459,23 +486,23 @@ class FibaroIntercomCardEditor extends HTMLElement {
           <label>Relay 1 Entity (Gate)</label>
           <ha-textfield 
             id="relay_1_entity" 
-            .value="${this._config.relay_1_entity || 'switch.fibaro_intercom_relay_1'}"
+            .value="${this._config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1'}"
           ></ha-textfield>
         </div>
         
         <div class="config-row">
-          <label>Door Button Label</label>
+          <label>Relay 0 Button Label</label>
           <ha-textfield 
-            id="door_label" 
-            .value="${this._config.door_label || 'Door'}"
+            id="relay_0_label" 
+            .value="${this._config.relay_0_label || 'Relay 0'}"
           ></ha-textfield>
         </div>
         
         <div class="config-row">
-          <label>Gate Button Label</label>
+          <label>Relay 1 Button Label</label>
           <ha-textfield 
-            id="gate_label" 
-            .value="${this._config.gate_label || 'Gate'}"
+            id="relay_1_label" 
+            .value="${this._config.relay_1_label || 'Relay 1'}"
           ></ha-textfield>
         </div>
         
@@ -564,4 +591,18 @@ window.customCards.push({
   description: 'Custom card for FIBARO Intercom with camera and relay controls',
   preview: true,
   documentationURL: 'https://github.com/Squazel/homeassistant-fibaro-intercom'
+});
+
+// Also register using the newer method if available
+if (window.customCards) {
+  console.info('FIBARO Intercom Card registered successfully');
+} else {
+  console.warn('customCards not available - card registration may have failed');
+}
+
+// Debug: Log when the card is loaded
+console.info('FIBARO Intercom Card loaded:', {
+  cardRegistered: !!customElements.get('fibaro-intercom-card'),
+  editorRegistered: !!customElements.get('fibaro-intercom-card-editor'),
+  customCardsArray: window.customCards?.length || 0
 });

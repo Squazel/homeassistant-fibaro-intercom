@@ -131,6 +131,16 @@ class FibaroIntercomRelaySensor(FibaroIntercomBinarySensor):
         return relay_states.get(self._relay_number, False)
 
     @property
+    def icon(self) -> str:
+        """Return the icon for this relay."""
+        if self._relay_number == 0:
+            return "mdi:door"
+        elif self._relay_number == 1:
+            return "mdi:gate"
+        else:
+            return "mdi:electric-switch"
+
+    @property
     def available(self) -> bool:
         """Return True if entity is available (connected to intercom)."""
         return (

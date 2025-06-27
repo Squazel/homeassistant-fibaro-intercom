@@ -62,10 +62,8 @@ After setup, you can modify these options:
 
 ### Binary Sensors
 - **FIBARO Intercom Connection Status**: Shows if the integration is connected to the intercom
-
-### Switches
-- **FIBARO Intercom Relay 0**: Control for the first relay
-- **FIBARO Intercom Relay 1**: Control for the second relay
+- **FIBARO Intercom Relay 0**: Shows the state of the first relay (on = relay is open/activated)
+- **FIBARO Intercom Relay 1**: Shows the state of the second relay (on = relay is open/activated)
 
 ### Camera
 - **FIBARO Intercom Camera**: Real-time video feed from the intercom camera
@@ -78,10 +76,40 @@ After setup, you can modify these options:
 
 The integration includes a custom Lovelace card that provides a unified interface for your intercom. The card combines camera viewing with relay controls in a single, easy-to-use dashboard widget.
 
-**Quick Setup:**
-1. Add a new card to your dashboard
-2. Choose "Custom: FIBARO Intercom Card"
-3. Configure with your camera entity
+### Card Setup
+
+**Automatic Setup (Default):**
+The custom card is automatically available after installing the integration. The integration registers the frontend resources automatically, so you can immediately:
+
+1. Go to your dashboard and click "Add Card"
+2. Search for "FIBARO" or look for "Custom: FIBARO Intercom Card"
+3. Configure the card with your entities
+
+**Manual Setup (Alternative):**
+If you prefer manual installation or encounter issues:
+
+1. **Add the resource manually:**
+   - Go to Settings → Dashboards → Resources
+   - Click "Add Resource"
+   - URL: `/fibaro_intercom/fibaro-intercom-card.js` (if using the integration's path)
+   - Or URL: `/local/fibaro-intercom-card.js` (if copied to www folder)
+   - Resource type: JavaScript Module
+   - Click "Create"
+
+2. **Use the card:**
+   - Restart Home Assistant and clear browser cache
+   - Go to your dashboard and click "Add Card"
+   - Search for "FIBARO" or look for "Custom: FIBARO Intercom Card"
+
+**Quick Configuration:**
+```yaml
+type: custom:fibaro-intercom-card
+camera_entity: camera.fibaro_intercom_camera
+relay_0_entity: binary_sensor.fibaro_intercom_relay_0
+relay_1_entity: binary_sensor.fibaro_intercom_relay_1
+relay_0_label: "Front Door"
+relay_1_label: "Gate"
+```
 
 For complete card documentation, configuration options, and examples, see [`custom_components/fibaro_intercom/frontend/README.md`](custom_components/fibaro_intercom/frontend/README.md).
 

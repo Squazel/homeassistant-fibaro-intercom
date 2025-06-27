@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.typing import ConfigType
+from homeassistant.components.http.static import StaticPathConfig
 
 from .const import ATTR_RELAY, ATTR_TIMEOUT, DEFAULT_PORT, DOMAIN
 from .coordinator import FibaroIntercomCoordinator
@@ -30,15 +33,37 @@ SERVICE_OPEN_RELAY_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the FIBARO Intercom component."""
-    # Register frontend resources
-    hass.http.register_static_path(
-        "/hacsfiles/fibaro_intercom/frontend",
-        hass.config.path("custom_components/fibaro_intercom/frontend"),
-        cache_headers=False,
-    )
+    # Register frontend resources for custom card
+    await _async_register_frontend_card(hass)
     return True
+
+
+async def _async_register_frontend_card(hass: HomeAssistant) -> None:
+    """Register the frontend card."""
+    try:
+        # Get the path to our frontend file
+        frontend_path = Path(__file__).parent / "frontend"
+        card_file = frontend_path / "fibaro-intercom-card.js"
+
+        if card_file.exists():
+            # Register the static path for our frontend files
+            await hass.http.async_register_static_paths(
+                [
+                    StaticPathConfig(
+                        f"/{DOMAIN}", str(frontend_path), cache_headers=False
+                    )
+                ]
+            )
+
+            _LOGGER.debug("FIBARO Intercom frontend path registered at /%s", DOMAIN)
+        else:
+            _LOGGER.warning(
+                "FIBARO Intercom frontend card file not found at %s", card_file
+            )
+    except Exception as err:
+        _LOGGER.error("Failed to register FIBARO Intercom frontend card: %s", err)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

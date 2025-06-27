@@ -59,10 +59,10 @@ camera_entity: camera.fibaro_intercom_camera
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
-relay_0_entity: switch.fibaro_intercom_relay_0
-relay_1_entity: switch.fibaro_intercom_relay_1
-door_label: "Front Door"
-gate_label: "Driveway Gate"
+relay_0_entity: binary_sensor.fibaro_intercom_relay_0
+relay_1_entity: binary_sensor.fibaro_intercom_relay_1
+relay_0_label: "Front Door"
+relay_1_label: "Driveway Gate"
 show_live_stream: true
 still_refresh_interval: 30
 card_height: "400px"
@@ -77,10 +77,10 @@ camera_icon: "mdi:camera"
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `camera_entity` | string | **Required** | Camera entity ID |
-| `relay_0_entity` | string | `switch.fibaro_intercom_relay_0` | Relay 0 switch entity |
-| `relay_1_entity` | string | `switch.fibaro_intercom_relay_1` | Relay 1 switch entity |
-| `door_label` | string | `Door` | Label for relay 0 button |
-| `gate_label` | string | `Gate` | Label for relay 1 button |
+| `relay_0_entity` | string | `binary_sensor.fibaro_intercom_relay_0` | Relay 0 binary sensor entity |
+| `relay_1_entity` | string | `binary_sensor.fibaro_intercom_relay_1` | Relay 1 binary sensor entity |
+| `relay_0_label` | string | `Relay 0` | Label for relay 0 button |
+| `relay_1_label` | string | `Relay 1` | Label for relay 1 button |
 | `show_live_stream` | boolean | `true` | Show live stream vs still images |
 | `still_refresh_interval` | number | `30` | Refresh interval for still images (seconds) |
 | `card_height` | string | `400px` | Total card height |
@@ -143,8 +143,8 @@ If your entities have different names (e.g., if you have multiple intercoms):
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.front_door_intercom
-relay_0_entity: switch.front_door_relay_0
-relay_1_entity: switch.front_door_relay_1
+relay_0_entity: binary_sensor.front_door_relay_0
+relay_1_entity: binary_sensor.front_door_relay_1
 ```
 
 ### Different Refresh Rates
@@ -165,8 +165,8 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 card_height: "500px"
 button_height: "80px"
-door_label: "🚪 Main Entrance"
-gate_label: "🚗 Vehicle Gate"
+relay_0_label: "🚪 Main Entrance"
+relay_1_label: "🚗 Vehicle Gate"
 ```
 
 ## Integration with Automations

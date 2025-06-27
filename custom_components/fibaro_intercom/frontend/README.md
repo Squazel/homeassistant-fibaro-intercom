@@ -30,27 +30,27 @@ The demo file is located in this directory and works in any modern web browser w
 
 ## Installation
 
-### Automatic (via Integration)
+The FIBARO Intercom card is automatically available after installing the integration. The integration registers the frontend resources automatically.
 
-The custom card is automatically installed when you install the FIBARO Intercom integration. After installing the integration:
+### Automatic Installation (Default)
 
-1. Go to your Lovelace dashboard
-2. Add a new card
-3. Choose "Custom: FIBARO Intercom Card"
-4. Configure the card (see configuration options below)
+When you install the FIBARO Intercom integration, the card becomes available automatically:
+- The card is served from `/fibaro_intercom/fibaro-intercom-card.js`
+- No manual resource registration is needed
+- The card will appear in the "Add Card" list as "FIBARO Intercom Card"
 
-### Manual Installation
+### Manual Installation (Alternative)
 
-If you need to install the card manually:
+If you prefer to use a manual setup or encounter issues:
 
-1. Copy `fibaro-intercom-card.js` from `custom_components/fibaro_intercom/frontend/` to your `www` folder
-2. Add the resource to your Lovelace configuration:
-
-```yaml
-resources:
-  - url: /local/fibaro-intercom-card.js
-    type: module
-```
+1. Download `fibaro-intercom-card.js` from this directory
+2. Place it in your `www` folder: `config/www/fibaro-intercom-card.js`
+3. Add the resource manually:
+   - Go to **Settings** → **Dashboards** → **Resources**
+   - Click **Add Resource**
+   - URL: `/local/fibaro-intercom-card.js`
+   - Resource type: **JavaScript module**
+   - Click **Create**
 
 ## Configuration
 
@@ -66,16 +66,14 @@ camera_entity: camera.fibaro_intercom_camera
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
-relay_0_entity: switch.fibaro_intercom_relay_0
-relay_1_entity: switch.fibaro_intercom_relay_1
-door_label: "Front Door"
-gate_label: "Driveway Gate"
+relay_0_entity: binary_sensor.fibaro_intercom_relay_0
+relay_1_entity: binary_sensor.fibaro_intercom_relay_1
+relay_0_label: "Front Door"
+relay_1_label: "Driveway Gate"
 show_live_stream: true
 still_refresh_interval: 30
 card_height: "400px"
 button_height: "60px"
-door_icon: "mdi:door"
-gate_icon: "mdi:gate"
 camera_icon: "mdi:camera"
 ```
 
@@ -84,17 +82,17 @@ camera_icon: "mdi:camera"
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `camera_entity` | string | **Required** | Camera entity ID |
-| `relay_0_entity` | string | `switch.fibaro_intercom_relay_0` | Relay 0 switch entity |
-| `relay_1_entity` | string | `switch.fibaro_intercom_relay_1` | Relay 1 switch entity |
-| `door_label` | string | `Door` | Label for relay 0 button |
-| `gate_label` | string | `Gate` | Label for relay 1 button |
+| `relay_0_entity` | string | `binary_sensor.fibaro_intercom_relay_0` | Relay 0 binary sensor entity |
+| `relay_1_entity` | string | `binary_sensor.fibaro_intercom_relay_1` | Relay 1 binary sensor entity |
+| `relay_0_label` | string | `Relay 0` | Label for relay 0 button |
+| `relay_1_label` | string | `Relay 1` | Label for relay 1 button |
 | `show_live_stream` | boolean | `true` | Show live stream vs still images |
 | `still_refresh_interval` | number | `30` | Refresh interval for still images (seconds) |
 | `card_height` | string | `400px` | Total card height |
 | `button_height` | string | `60px` | Height of control buttons |
-| `door_icon` | string | `mdi:door` | Icon for door button |
-| `gate_icon` | string | `mdi:gate` | Icon for gate button |
 | `camera_icon` | string | `mdi:camera` | Icon for snapshot button |
+
+**Note**: Icons for relay buttons are automatically taken from the entity's icon attribute. The integration sets default icons (`mdi:door` for relay 0, `mdi:gate` for relay 1) which can be customized in Home Assistant's entity settings.
 
 ## Usage
 
@@ -150,8 +148,8 @@ If your entities have different names (e.g., if you have multiple intercoms):
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.front_door_intercom
-relay_0_entity: switch.front_door_relay_0
-relay_1_entity: switch.front_door_relay_1
+relay_0_entity: binary_sensor.front_door_relay_0
+relay_1_entity: binary_sensor.front_door_relay_1
 ```
 
 ### Different Refresh Rates
@@ -172,8 +170,8 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 card_height: "500px"
 button_height: "80px"
-door_label: "🚪 Main Entrance"
-gate_label: "🚗 Vehicle Gate"
+relay_0_label: "🚪 Main Entrance"
+relay_1_label: "🚗 Vehicle Gate"
 ```
 
 ## Integration with Automations
@@ -242,8 +240,8 @@ When modifying the card JavaScript:
 The card integrates with the main FIBARO Intercom integration and uses these entities:
 
 - `camera.fibaro_intercom_camera` - Camera feed
-- `switch.fibaro_intercom_relay_0` - Door control
-- `switch.fibaro_intercom_relay_1` - Gate control
+- `binary_sensor.fibaro_intercom_relay_0` - Door control state
+- `binary_sensor.fibaro_intercom_relay_1` - Gate control state
 - Connection status from the integration coordinator
 
 ## Files in this Directory
