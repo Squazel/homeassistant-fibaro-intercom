@@ -34,7 +34,7 @@ async def test_intercom_connection():
         print("   $env:FIBARO_HOST='192.168.1.100'")
         print("   $env:FIBARO_USERNAME='admin'")
         print("   $env:FIBARO_PASSWORD='your_password'")
-        print("   python test_connection.py")
+        print("   python tests/test_connection.py")
         return False
 
     uri = f"wss://{HOST}:{PORT}/wsock"

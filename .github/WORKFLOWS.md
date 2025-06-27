@@ -4,27 +4,33 @@ This repository includes several GitHub Actions workflows for continuous integra
 
 ## Workflows Overview
 
-### 1. Tests (`tests.yml`)
+### 1. Code Quality (`quality.yml`)
 - **Triggers**: Push to main/master, pull requests
-- **Matrix**: Python 3.11, 3.12, 3.13
+- **Python**: 3.13 (single version for efficiency)
 - **Steps**:
-  - Code quality checks (flake8, black, isort)
-  - Type checking with mypy
+  - Ruff linting and formatting
+  - MyPy type checking (advisory)
+  - Code quality validation
+
+### 2. Tests (`tests.yml`)
+- **Triggers**: Push to main/master, pull requests
+- **Matrix**: Python 3.11, 3.12, 3.13 (for compatibility testing)
+- **Steps**:
   - Unit tests with pytest
   - Coverage reporting to Codecov
-  - Integration structure validation
+  - Integration structure validation (Python 3.13)
 
-### 2. HACS Validation (`hacs.yml`)
+### 3. HACS Validation (`hacs.yml`)
 - **Triggers**: Push, pull requests, daily schedule
 - **Purpose**: Validates integration for HACS compatibility
 - **Uses**: Official HACS action
 
-### 3. Home Assistant Validation (`hassfest.yml`)
+### 4. Home Assistant Validation (`hassfest.yml`)
 - **Triggers**: Push, pull requests, daily schedule
 - **Purpose**: Validates integration with Home Assistant's hassfest tool
 - **Uses**: Official Home Assistant action
 
-### 4. CodeQL Security Analysis (`codeql.yml`)
+### 5. CodeQL Security Analysis (`codeql.yml`)
 - **Triggers**: Push to main/master, pull requests, weekly schedule
 - **Purpose**: Static security analysis
 - **Language**: Python
@@ -34,6 +40,7 @@ This repository includes several GitHub Actions workflows for continuous integra
 The README.md includes status badges for all workflows:
 
 ```markdown
+[![Code Quality](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/quality.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/quality.yml)
 [![Tests](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/tests.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/tests.yml)
 [![HACS](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hacs.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hacs.yml)
 [![hassfest](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml)
@@ -44,9 +51,9 @@ The README.md includes status badges for all workflows:
 
 The workflows enforce several quality gates:
 
-1. **Code Style**: Black formatting and isort import sorting
-2. **Code Quality**: flake8 linting with specific error checks
-3. **Type Safety**: mypy type checking (warnings only)
+1. **Code Style**: Ruff formatting and import sorting
+2. **Code Quality**: Ruff linting with comprehensive checks
+3. **Type Safety**: MyPy type checking (advisory for Home Assistant compatibility)
 4. **Test Coverage**: pytest with coverage reporting
 5. **Integration Validation**: HACS and hassfest compatibility
 6. **Security**: CodeQL static analysis
@@ -63,20 +70,15 @@ The workflows enforce several quality gates:
 Before pushing, run these commands locally to match CI:
 
 ```bash
-# Format code
-black custom_components/ tests/
-isort custom_components/ tests/
-
-# Lint
-flake8 custom_components/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-
-# Type check
-mypy custom_components/fibaro_intercom/
-
-# Test
-cd custom_components/fibaro_intercom
-python -m pytest ../../tests/ -v --cov=client --cov-report=term-missing
+# Modern unified workflow using centralized commands
+python hass-dev.py check    # Complete check (format + lint + test)
+python hass-dev.py quality  # Code quality only (format + lint)
+python hass-dev.py test     # Tests only
+python hass-dev.py lint     # Lint only (Ruff + MyPy)
+python hass-dev.py format   # Format only (Ruff)
 ```
+
+All commands use the same tools and configuration as CI via `tools/commands.py`.
 
 ## Release Process
 

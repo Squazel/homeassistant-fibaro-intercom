@@ -28,15 +28,27 @@ source .venv/bin/activate
 
 3. Install development dependencies:
 ```bash
-pip install -r requirements.txt
+python hass-dev.py setup
 ```
 
-This single requirements file includes everything needed for:
+This installs everything needed for:
 - Testing (pytest, pytest-asyncio, etc.)
-- Code quality (black, isort, flake8, mypy)
+- Code quality (ruff for linting + formatting, mypy for types)
 - Runtime dependencies (websockets, aiohttp)
 
-The integration's core logic in `client.py` only requires `websockets` and can be tested independently of Home Assistant.
+**Modern Development Stack:**
+- **Centralized Commands**: All tools use `tools/commands.py` for consistency
+- **Ruff**: Ultra-fast linter and formatter (replaces flake8 + isort + black)
+- **MyPy**: Type checking with Home Assistant compatibility
+- **pytest**: Testing framework with async support
+- **Separate CI Workflows**: Code quality and tests run independently
+
+All dependencies and tool configurations are centralized in `pyproject.toml` for consistency across development, pre-commit hooks, and CI/CD.
+
+**Modern Tool Stack:**
+- **Ruff**: Ultra-fast linter and formatter (replaces flake8 + isort + black)
+- **MyPy**: Type checking for better code quality
+- **pytest**: Testing framework with async support
 
 ## Architecture
 
@@ -144,26 +156,24 @@ async def test_relay_open():
 
 ## Code Quality
 
-### Formatting
+### Quick Development Commands
 
-Format code with Black:
 ```bash
-black custom_components/ tests/
+# Setup (run once)
+python hass-dev.py setup
+
+# Daily development workflow
+python hass-dev.py quality    # Quick format + lint (no tests)
+python hass-dev.py format     # Format code only
+python hass-dev.py test       # Run tests only
+python hass-dev.py check      # Full check (format + lint + test)
+
+# Advanced options
+python hass-dev.py lint-strict  # Strict type checking
+python hass-dev.py check-strict # Full check with strict typing
 ```
 
-### Import Sorting
-
-Sort imports with isort:
-```bash
-isort custom_components/ tests/
-```
-
-### Linting
-
-Run flake8 for linting:
-```bash
-flake8 custom_components/ tests/
-```
+All commands use the centralized `tools/commands.py` script for consistency across development, pre-commit, and CI environments.
 
 ### Type Checking
 
@@ -192,7 +202,7 @@ A standalone test script (`test_connection.py`) is provided to test intercom con
 $env:FIBARO_HOST='192.168.1.100'
 $env:FIBARO_USERNAME='your_username'
 $env:FIBARO_PASSWORD='your_password'
-python test_connection.py
+python tests/test_connection.py
 ```
 
 ```bash
@@ -200,7 +210,7 @@ python test_connection.py
 export FIBARO_HOST='192.168.1.100'
 export FIBARO_USERNAME='your_username'
 export FIBARO_PASSWORD='your_password'
-python test_connection.py
+python tests/test_connection.py
 ```
 
 The test script will verify WebSocket connectivity and authentication before you attempt to configure the Home Assistant integration.

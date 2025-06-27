@@ -12,14 +12,14 @@ A custom Lovelace card for the FIBARO Intercom integration that provides a unifi
 
 ## Preview
 
-Before installing, you can preview how the card looks and behaves by opening `demo.html` in your web browser. This standalone demo shows:
+Before installing, you can preview how the card looks and behaves by opening [`demo.html`](custom_components/fibaro_intercom/frontend/demo.html) in your web browser. This standalone demo shows:
 
 - The complete card layout and styling
 - Interactive button behavior with visual feedback
 - How the card adapts to your configuration
 - Expected appearance in different themes
 
-The demo file is located in the root of the repository and works in any modern web browser without requiring Home Assistant.
+The demo file is located in the `custom_components/fibaro_intercom/frontend/` directory and works in any modern web browser without requiring Home Assistant.
 
 ## Installation
 
@@ -206,13 +206,13 @@ The card respects your Home Assistant theme colors:
 
 ### Visual Testing
 
-The `demo.html` file provides a standalone way to test and preview the card:
+The [`demo.html`](custom_components/fibaro_intercom/frontend/demo.html) file provides a standalone way to test and preview the card:
 
 ```bash
 # Open in your browser to see the card design
-open demo.html  # macOS
-start demo.html  # Windows
-xdg-open demo.html  # Linux
+open custom_components/fibaro_intercom/frontend/demo.html  # macOS
+start custom_components/fibaro_intercom/frontend/demo.html  # Windows
+xdg-open custom_components/fibaro_intercom/frontend/demo.html  # Linux
 ```
 
 This demo is useful for:
@@ -237,5 +237,5 @@ For issues specific to the custom card:
 1. Check the browser console for JavaScript errors
 2. Verify your configuration matches the examples above
 3. Test with the basic configuration first
-4. Use the demo.html to verify expected appearance
+4. Use the [`demo.html`](custom_components/fibaro_intercom/frontend/demo.html) to verify expected appearance
 5. Report issues on the [GitHub repository](https://github.com/Squazel/homeassistant-fibaro-intercom/issues)

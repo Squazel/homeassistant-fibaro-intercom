@@ -1,5 +1,6 @@
 # FIBARO Intercom Integration for Home Assistant
 
+[![Code Quality](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/quality.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/quality.yml)
 [![Tests](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/tests.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/tests.yml)
 [![HACS](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hacs.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hacs.yml)
 [![hassfest](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml)
@@ -197,7 +198,7 @@ A test script is provided to diagnose connection issues independently of Home As
 $env:FIBARO_HOST='192.168.1.100'
 $env:FIBARO_USERNAME='admin'
 $env:FIBARO_PASSWORD='your_password'
-python test_connection.py
+python tests/test_connection.py
 ```
 
 ```bash
@@ -205,7 +206,7 @@ python test_connection.py
 export FIBARO_HOST='192.168.1.100'
 export FIBARO_USERNAME='admin'
 export FIBARO_PASSWORD='your_password'
-python test_connection.py
+python tests/test_connection.py
 ```
 
 **Alternative:** Edit the script directly and replace the placeholder values with your intercom details.
@@ -242,25 +243,21 @@ For project structure and documentation overview, see [PROJECT.md](PROJECT.md).
 git clone https://github.com/Squazel/homeassistant-fibaro-intercom.git
 cd homeassistant-fibaro-intercom
 
-# Set up development environment
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# or: source .venv/bin/activate  # macOS/Linux
-pip install -r requirements.txt
-
-# Install pre-commit hooks (auto-formats code on commit)
-pre-commit install
-
-# Run tests to verify setup
-python -m pytest  # All tests should pass
+# One-command setup
+python hass-dev.py setup
 
 # Development workflow:
-python dev.py format  # Format code (black + isort)
-python dev.py test    # Run tests
-python dev.py check   # Run all checks before committing
+python hass-dev.py quality    # Quick format + lint check (no tests)
+python hass-dev.py check      # Full check including tests
+python hass-dev.py test       # Run tests only
+python hass-dev.py format     # Format code only
 ```
 
-**Automated Code Formatting:** Pre-commit hooks automatically format your code when you commit, so CI tests always pass. You can also run `python dev.py format` manually.
+**Modern Development Stack:**
+- **Centralized Commands**: All development tools call `tools/commands.py` for consistency
+- **Ruff**: Ultra-fast linter and formatter (replaces flake8 + isort + black)
+- **Separate CI Workflows**: Code quality and tests run independently
+- **Pre-commit Integration**: Automatic code quality checks on commit
 
 ## Contributing
 
