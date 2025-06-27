@@ -11,6 +11,7 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platfor
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.components.http.static import StaticPathConfig
+import homeassistant.helpers.config_validation as cv
 
 from .const import ATTR_RELAY, ATTR_TIMEOUT, DEFAULT_PORT, DOMAIN
 from .coordinator import FibaroIntercomCoordinator
@@ -31,6 +32,9 @@ SERVICE_OPEN_RELAY_SCHEMA = vol.Schema(
         ),
     }
 )
+
+# Config schema - integration only configurable via config entries
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
