@@ -16,9 +16,9 @@ from websockets.exceptions import ConnectionClosed
 
 from .const import (
     ATTR_BUTTON,
+    ATTR_BUTTON_STATE,
     ATTR_RELAY,
     ATTR_RELAY_STATE,
-    ATTR_BUTTON_STATE,
     DOMAIN,
     EVENT_DOORBELL_PRESSED,
     METHOD_BUTTON_STATE_CHANGED,

@@ -47,7 +47,7 @@ homeassistant-fibaro-intercom/
   - Quick setup guide
   - Requirements
 
-### Developer Documentation  
+### Developer Documentation
 - **`tests/README.md`**: Development guide
   - Setup instructions
   - Architecture overview

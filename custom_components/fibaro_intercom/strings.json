@@ -6,7 +6,7 @@
         "description": "Enter the connection details for your FIBARO Intercom device.",
         "data": {
           "host": "Host",
-          "port": "Port", 
+          "port": "Port",
           "username": "Username",
           "password": "Password"
         }
@@ -27,7 +27,7 @@
         "description": "Configure optional settings for your FIBARO Intercom.",
         "data": {
           "port": "Port",
-          "username": "Username", 
+          "username": "Username",
           "password": "Password"
         }
       }

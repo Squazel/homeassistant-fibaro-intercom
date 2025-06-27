@@ -97,7 +97,7 @@ The repository is structured for HACS compatibility:
 ## Documentation Structure
 
 - **`README.md`**: User-facing documentation
-- **`DESCRIPTION.md`**: HACS integration description  
+- **`DESCRIPTION.md`**: HACS integration description
 - **`tests/README.md`**: Development and testing guide
 - **`.github/WORKFLOWS.md`**: This file - CI/CD documentation
 

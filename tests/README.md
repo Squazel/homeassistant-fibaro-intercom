@@ -134,10 +134,10 @@ async def test_relay_open():
     with patch('websockets.connect') as mock_connect:
         mock_websocket = AsyncMock()
         mock_connect.return_value = mock_websocket
-        
+
         client = FibaroIntercomClient("192.168.0.17", 8081, "user", "pass")
         await client.connect()
-        
+
         # Test your functionality
         assert client.is_connected
 ```
@@ -228,7 +228,7 @@ import json
 async def mock_intercom_server(websocket, path):
     async for message in websocket:
         data = json.loads(message)
-        
+
         if data.get("method") == "com.fibaro.intercom.account.login":
             response = {
                 "jsonrpc": "2.0",
@@ -247,7 +247,7 @@ async def mock_intercom_server(websocket, path):
                 "id": data["id"],
                 "error": {"code": -32601, "message": "Method not found"}
             }
-        
+
         await websocket.send(json.dumps(response))
 
 # Run the mock server

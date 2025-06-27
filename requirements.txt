@@ -20,6 +20,10 @@ isort>=5.12.0
 flake8>=6.0.0
 mypy>=1.0.0
 
+# Development automation (optional - for contributors only)
+# Run 'pre-commit install' after installing to enable auto-formatting on commit
+pre-commit>=3.0.0
+
 # Optional: Uncomment if you want full Home Assistant types for development
 # Note: This is a large dependency and not needed for core functionality testing
 # homeassistant>=2024.1.0

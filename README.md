@@ -14,6 +14,7 @@ A custom Home Assistant integration for controlling and monitoring FIBARO Interc
 - **Doorbell Monitoring**: Real-time doorbell press detection
 - **Camera Integration**: Access to live video stream and still images
 - **Event Handling**: Home Assistant events for doorbell presses
+- **Custom Lovelace Card**: Unified dashboard card with camera and controls
 - **Robust Error Handling**: Comprehensive error handling and logging
 
 ## Installation
@@ -71,6 +72,17 @@ After setup, you can modify these options:
 
 ### Device Triggers
 - **Doorbell Pressed**: Fires when the doorbell button is pressed (recommended for automations)
+
+## Custom Lovelace Card
+
+The integration includes a custom Lovelace card that provides a unified interface for your intercom. The card combines camera viewing with relay controls in a single, easy-to-use dashboard widget.
+
+**Quick Setup:**
+1. Add a new card to your dashboard
+2. Choose "Custom: FIBARO Intercom Card"
+3. Configure with your camera entity
+
+For complete card documentation, configuration options, and examples, see [`custom_components/fibaro_intercom/frontend/README.md`](custom_components/fibaro_intercom/frontend/README.md).
 
 ## Services
 
@@ -200,7 +212,7 @@ python test_connection.py
 
 The test script will:
 - ✅ Test WebSocket connectivity
-- ✅ Verify authentication 
+- ✅ Verify authentication
 - ✅ Provide detailed error messages
 - ✅ Confirm the integration should work
 
@@ -222,19 +234,33 @@ logger:
 
 ## Development
 
-For development setup, testing, and contributing guidelines, see [tests/README.md](tests/README.md).  
+For development setup, testing, and contributing guidelines, see [tests/README.md](tests/README.md).
 For project structure and documentation overview, see [PROJECT.md](PROJECT.md).
 
 **Quick start for developers:**
 ```bash
 git clone https://github.com/Squazel/homeassistant-fibaro-intercom.git
 cd homeassistant-fibaro-intercom
+
+# Set up development environment
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 # or: source .venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
-python -m pytest  # Run tests to verify setup - all tests should pass
+
+# Install pre-commit hooks (auto-formats code on commit)
+pre-commit install
+
+# Run tests to verify setup
+python -m pytest  # All tests should pass
+
+# Development workflow:
+python dev.py format  # Format code (black + isort)
+python dev.py test    # Run tests
+python dev.py check   # Run all checks before committing
 ```
+
+**Automated Code Formatting:** Pre-commit hooks automatically format your code when you commit, so CI tests always pass. You can also run `python dev.py format` manually.
 
 ## Contributing
 

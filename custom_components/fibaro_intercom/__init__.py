@@ -6,15 +6,10 @@ import logging
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    Platform,
-)
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 
-from .const import ATTR_RELAY, ATTR_TIMEOUT, DOMAIN, DEFAULT_PORT
+from .const import ATTR_RELAY, ATTR_TIMEOUT, DEFAULT_PORT, DOMAIN
 from .coordinator import FibaroIntercomCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,6 +28,17 @@ SERVICE_OPEN_RELAY_SCHEMA = vol.Schema(
         ),
     }
 )
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the FIBARO Intercom component."""
+    # Register frontend resources
+    hass.http.register_static_path(
+        "/hacsfiles/fibaro_intercom/frontend",
+        hass.config.path("custom_components/fibaro_intercom/frontend"),
+        cache_headers=False,
+    )
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
