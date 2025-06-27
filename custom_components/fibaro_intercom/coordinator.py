@@ -17,7 +17,8 @@ from websockets.exceptions import ConnectionClosed
 from .const import (
     ATTR_BUTTON,
     ATTR_RELAY,
-    ATTR_STATE,
+    ATTR_RELAY_STATE,
+    ATTR_BUTTON_STATE,
     DOMAIN,
     EVENT_DOORBELL_PRESSED,
     METHOD_BUTTON_STATE_CHANGED,
@@ -239,7 +240,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     async def _async_handle_relay_state_changed(self, params: dict[str, Any]) -> None:
         """Handle relay state change."""
         relay = params.get(ATTR_RELAY, 0)
-        state = params.get(ATTR_STATE, False)
+        state = params.get(ATTR_RELAY_STATE, False)
 
         _LOGGER.debug("Relay %s state changed to %s", relay, state)
         self.relay_states[relay] = state
@@ -255,7 +256,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     async def _async_handle_button_state_changed(self, params: dict[str, Any]) -> None:
         """Handle button state change (doorbell)."""
         button = params.get(ATTR_BUTTON, 0)
-        state = params.get(ATTR_STATE, False)
+        state = params.get(ATTR_BUTTON_STATE, False)
 
         if state:  # Button pressed
             _LOGGER.debug("Doorbell button %s pressed", button)
