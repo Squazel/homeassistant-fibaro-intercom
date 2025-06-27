@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Home Assistant integration for FIBARO Intercom"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "websockets>=11.0",  # Core requirement (matches manifest.json)
 ]
@@ -32,7 +32,7 @@ dev = [
 # Centralized tool configuration
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
 src = ["custom_components", "tests"]
 
 [tool.ruff.format]
@@ -75,11 +75,11 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
-    "--cov=custom_components.fibaro_intercom",
+    "--cov=.",
     "--cov-report=term-missing",
     "--cov-report=xml:tests/coverage.xml",
     "--cov-report=html:tests/htmlcov",
-    "--cov-fail-under=50",  # Lower threshold since we're testing integration code
+    "--cov-fail-under=50",  # TODO: review/increase
 ]
 asyncio_mode = "auto"
 markers = [
@@ -88,12 +88,15 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["custom_components/fibaro_intercom"]
+source = ["."]
+include = ["custom_components/fibaro_intercom/*"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/.*",
     "custom_components/fibaro_intercom/_version.py",
+    "hass-dev.py",  # CLI wrapper - not part of core functionality
+    "tools/*",  # Development & Testing code - not part of core functionality
 ]
 
 [tool.coverage.report]
@@ -117,7 +120,7 @@ output = "tests/coverage.xml"
 directory = "tests/htmlcov"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 show_error_codes = true
 strict = false
 warn_return_any = false  # Home Assistant uses a lot of Any types
