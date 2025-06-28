@@ -78,6 +78,21 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         )
 
     @property
+    def entity_picture(self) -> str | None:
+        """Return entity picture URL or None."""
+        # FIBARO Intercom uses HTTP Basic Auth, not access tokens
+        # Return None to avoid access_tokens[-1] IndexError
+        return None
+
+    @property
+    def state_attributes(self) -> dict[str, str] | None:
+        """Return state attributes."""
+        # Override to handle empty access_tokens list
+        if not self.access_tokens:
+            return {}
+        return {"access_token": self.access_tokens[-1]}
+
+    @property
     def supported_features(self) -> int:
         """Return supported features."""
         from homeassistant.components.camera import CameraEntityFeature
