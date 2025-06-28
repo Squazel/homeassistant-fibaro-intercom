@@ -55,7 +55,9 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         self._attr_name = "FIBARO Intercom Camera"
 
         # Required attributes for Home Assistant camera
-        self.access_tokens: list[str] = []
+        # Initialize with a dummy token to prevent IndexError
+        # FIBARO Intercom uses HTTP Basic Auth, not token-based access
+        self.access_tokens: list[str] = ["basic_auth"]
         self._webrtc_provider = None
         # Required in newer Home Assistant versions - FIBARO Intercom uses MJPEG, not WebRTC
         self._supports_native_async_webrtc = False
@@ -87,10 +89,9 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
     @property
     def state_attributes(self) -> dict[str, str] | None:
         """Return state attributes."""
-        # Override to handle empty access_tokens list
-        if not self.access_tokens:
-            return {}
-        return {"access_token": self.access_tokens[-1]}
+        # Override to handle access tokens for FIBARO Intercom
+        # Return None to avoid including dummy access token in state
+        return None
 
     @property
     def supported_features(self) -> int:
