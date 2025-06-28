@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 import homeassistant.helpers.config_validation as cv
 
@@ -60,12 +61,12 @@ async def _async_register_frontend_card(hass: HomeAssistant) -> None:
             [StaticPathConfig(f"/{DOMAIN}", str(frontend_path), cache_headers=False)]
         )
 
-        # Use the frontend.add_extra_js_url method to automatically load the card
+        # Use the add_extra_js_url method to automatically load the card
         # This is the standard way integrations register custom cards
         card_url = f"/{DOMAIN}/fibaro-intercom-card.js"
 
         # Add to frontend extra JS URLs
-        hass.components.frontend.add_extra_js_url(hass, card_url)
+        add_extra_js_url(hass, card_url)
 
         _LOGGER.info("FIBARO Intercom card registered automatically at: %s", card_url)
 
