@@ -45,29 +45,32 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 
 async def _async_register_frontend_card(hass: HomeAssistant) -> None:
-    """Register the frontend card."""
+    """Register the frontend card resources."""
     try:
-        # Get the path to our frontend file
+        # Get the path to our frontend directory
         frontend_path = Path(__file__).parent / "frontend"
         card_file = frontend_path / "fibaro-intercom-card.js"
 
-        if card_file.exists():
-            # Register the static path for our frontend files
-            await hass.http.async_register_static_paths(
-                [
-                    StaticPathConfig(
-                        f"/{DOMAIN}", str(frontend_path), cache_headers=False
-                    )
-                ]
-            )
+        if not card_file.exists():
+            _LOGGER.error("FIBARO Intercom card file not found: %s", card_file)
+            return
 
-            _LOGGER.debug("FIBARO Intercom frontend path registered at /%s", DOMAIN)
-        else:
-            _LOGGER.warning(
-                "FIBARO Intercom frontend card file not found at %s", card_file
-            )
+        # Register the static path for the frontend directory
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(f"/{DOMAIN}", str(frontend_path), cache_headers=False)]
+        )
+
+        # Use the frontend.add_extra_js_url method to automatically load the card
+        # This is the standard way integrations register custom cards
+        card_url = f"/{DOMAIN}/fibaro-intercom-card.js"
+
+        # Add to frontend extra JS URLs
+        hass.components.frontend.add_extra_js_url(hass, card_url)
+
+        _LOGGER.info("FIBARO Intercom card registered automatically at: %s", card_url)
+
     except Exception as err:
-        _LOGGER.error("Failed to register FIBARO Intercom frontend card: %s", err)
+        _LOGGER.error("Failed to register FIBARO Intercom card: %s", err)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

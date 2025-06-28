@@ -592,17 +592,3 @@ window.customCards.push({
   preview: true,
   documentationURL: 'https://github.com/Squazel/homeassistant-fibaro-intercom'
 });
-
-// Also register using the newer method if available
-if (window.customCards) {
-  console.info('FIBARO Intercom Card registered successfully');
-} else {
-  console.warn('customCards not available - card registration may have failed');
-}
-
-// Debug: Log when the card is loaded
-console.info('FIBARO Intercom Card loaded:', {
-  cardRegistered: !!customElements.get('fibaro-intercom-card'),
-  editorRegistered: !!customElements.get('fibaro-intercom-card-editor'),
-  customCardsArray: window.customCards?.length || 0
-});
