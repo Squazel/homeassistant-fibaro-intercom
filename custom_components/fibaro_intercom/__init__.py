@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.components.http.static import StaticPathConfig
+from homeassistant.components.http import StaticPathConfig
 import homeassistant.helpers.config_validation as cv
 
 from .const import ATTR_RELAY, ATTR_TIMEOUT, DEFAULT_PORT, DOMAIN
