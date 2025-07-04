@@ -7,7 +7,7 @@ import logging
 import urllib.parse
 
 from aiohttp import BasicAuth
-from homeassistant.components.camera import Camera
+from homeassistant.components.camera import Camera, CameraEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -96,9 +96,9 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         return None
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> CameraEntityFeature:
         """Return supported features."""
-        return 0
+        return CameraEntityFeature(0)
 
     def _encoded_credentials(self):
         """Return URL-encoded username and password as a tuple."""
