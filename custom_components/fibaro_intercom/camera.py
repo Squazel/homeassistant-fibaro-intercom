@@ -7,7 +7,7 @@ import logging
 import urllib.parse
 
 from aiohttp import BasicAuth
-from homeassistant.components.camera import Camera
+from homeassistant.components.camera import Camera, async_aiohttp_proxy_stream
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -98,10 +98,7 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
     @property
     def supported_features(self) -> int:
         """Return supported features."""
-        # Only support MJPEG, not stream worker
-        from homeassistant.components.camera import CameraEntityFeature
-
-        return CameraEntityFeature.ON_OFF  # or 0 if you want no extra features
+        return 0
 
     def _encoded_credentials(self):
         """Return URL-encoded username and password as a tuple."""
@@ -148,8 +145,8 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             f"http://{username}:{password}@"
             f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
         )
-        resp = await session.get(url)
-        return resp
+        response = await session.get(url)
+        return await async_aiohttp_proxy_stream(self.hass, request, response)
 
     async def stream_source(self) -> str | None:
         """Return None to disable stream worker and use MJPEG proxy."""
