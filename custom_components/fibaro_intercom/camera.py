@@ -50,7 +50,8 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize the camera."""
-        super().__init__(coordinator)
+        CoordinatorEntity.__init__(self, coordinator)
+        Camera.__init__(self)
         self._config_entry = config_entry
         self._attr_unique_id = f"{config_entry.entry_id}_{ENTITY_CAMERA}"
         self._attr_name = "FIBARO Intercom Camera"
