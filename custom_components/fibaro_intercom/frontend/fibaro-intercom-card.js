@@ -48,10 +48,12 @@ class FibaroIntercomCard extends HTMLElement {
     };
     
     this._render();
+    this._createPictureEntityCard();
   }
 
   set hass(hass) {
     this._hass = hass;
+    this._updatePictureEntityCard();
     this._updateStates();
   }
 
@@ -78,20 +80,11 @@ class FibaroIntercomCard extends HTMLElement {
           min-height: 200px;
         }
         
-        .camera-image {
+        .picture-entity-card {
           width: 100%;
           height: 100%;
-          object-fit: cover;
-          cursor: pointer;
-        }
-        
-        .camera-error {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-          color: var(--secondary-text-color);
-          font-size: 14px;
+          border-radius: 8px;
+          overflow: hidden;
         }
         
         .controls {
@@ -192,12 +185,10 @@ class FibaroIntercomCard extends HTMLElement {
       <div class="fibaro-card">
         <div class="camera-container">
           <div class="status-indicator" id="status-indicator"></div>
-          <img class="camera-image" id="camera-image" style="display: none;" />
-          <div class="camera-error" id="camera-error" style="display: none;">
-            Camera unavailable
+          <div class="picture-entity-card" id="picture-entity-container">
+            <!-- Picture entity card will be inserted here -->
           </div>
-          <div class="loading" id="loading">
-            Loading camera...
+        </div>
           </div>
         </div>
         
@@ -245,6 +236,38 @@ class FibaroIntercomCard extends HTMLElement {
     return entity?.attributes?.icon;
   }
 
+  _createPictureEntityCard() {
+    if (!this._config.camera_entity) return;
+    
+    // Create the picture-entity card element
+    this._pictureCard = document.createElement('hui-picture-entity-card');
+    
+    // Set the picture-entity card configuration
+    const pictureConfig = {
+      type: 'picture-entity',
+      entity: this._config.camera_entity,
+      show_state: false,
+      show_name: false,
+      camera_view: 'auto',
+      fit_mode: 'cover'
+    };
+    
+    this._pictureCard.setConfig(pictureConfig);
+    
+    // Insert the card into the container
+    const container = this.shadowRoot.getElementById('picture-entity-container');
+    if (container) {
+      container.innerHTML = '';
+      container.appendChild(this._pictureCard);
+    }
+  }
+
+  _updatePictureEntityCard() {
+    if (this._pictureCard && this._hass) {
+      this._pictureCard.hass = this._hass;
+    }
+  }
+
   _updateStates() {
     if (!this._hass) return;
 
@@ -260,8 +283,7 @@ class FibaroIntercomCard extends HTMLElement {
       statusIndicator.classList.remove('connected');
     }
 
-    // Update camera image
-    this._updateCameraImage();
+    // Camera is now handled by the embedded picture-entity card
 
     // Update relay button states
     const doorButton = this.shadowRoot.getElementById('door-button');
@@ -293,47 +315,6 @@ class FibaroIntercomCard extends HTMLElement {
       gateButton.style.background = 'var(--success-color)';
     } else {
       gateButton.style.background = 'var(--primary-color)';
-    }
-  }
-
-  _updateCameraImage() {
-    if (!this._hass) return;
-
-    const cameraEntity = this._hass.states[this._config.camera_entity];
-    const cameraImage = this.shadowRoot.getElementById('camera-image');
-    const cameraError = this.shadowRoot.getElementById('camera-error');
-    const loading = this.shadowRoot.getElementById('loading');
-
-    if (!cameraEntity || cameraEntity.state === 'unavailable') {
-      cameraImage.style.display = 'none';
-      cameraError.style.display = 'flex';
-      loading.style.display = 'none';
-      return;
-    }
-
-    // Show still image by default (most cameras show still until clicked)
-    const imageUrl = `/api/camera_proxy/${this._config.camera_entity}?${Date.now()}`;
-    
-    cameraImage.onload = () => {
-      cameraImage.style.display = 'block';
-      cameraError.style.display = 'none';
-      loading.style.display = 'none';
-    };
-    
-    cameraImage.onerror = () => {
-      cameraImage.style.display = 'none';
-      cameraError.style.display = 'flex';
-      loading.style.display = 'none';
-    };
-    
-    cameraImage.src = imageUrl;
-
-    // Auto-refresh still image if configured
-    if (!this._config.show_live_stream && this._config.still_refresh_interval > 0) {
-      clearTimeout(this._refreshTimer);
-      this._refreshTimer = setTimeout(() => {
-        this._updateCameraImage();
-      }, this._config.still_refresh_interval * 1000);
     }
   }
 
