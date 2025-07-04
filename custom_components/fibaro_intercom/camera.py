@@ -98,13 +98,15 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
     @property
     def supported_features(self) -> int:
         """Return supported features."""
+        # Only support MJPEG, not stream worker
         from homeassistant.components.camera import CameraEntityFeature
 
-        return CameraEntityFeature.STREAM
+        return CameraEntityFeature.ON_OFF  # or 0 if you want no extra features
 
     def _encoded_credentials(self):
         """Return URL-encoded username and password as a tuple."""
         import urllib.parse
+
         username = urllib.parse.quote(self.coordinator.username, safe="")
         password = urllib.parse.quote(self.coordinator.password, safe="")
         return username, password
@@ -120,8 +122,6 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             session = async_get_clientsession(self.hass, verify_ssl=False)
             username, password = self._encoded_credentials()
             url = f"http://{username}:{password}@{self.coordinator.host}:{CAMERA_PORT}{CAMERA_STILL_JPEG}"
-            # Log the full URL for debugging
-            _LOGGER.warning("Camera fetch: url=%s", url)
             async with session.get(url, timeout=10) as response:
                 if response.status == 200:
                     return await response.read()
@@ -138,16 +138,19 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             _LOGGER.error("Error fetching camera image: %s", ex)
             return None
 
-    async def stream_source(self) -> str | None:
-        """Return the source of the stream."""
+    async def async_mjpeg_stream(self, request):
+        """Serve an MJPEG stream from the camera."""
         if not self.available:
             return None
-
+        session = async_get_clientsession(self.hass, verify_ssl=False)
         username, password = self._encoded_credentials()
         url = (
             f"http://{username}:{password}@"
             f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
         )
-        # Log the full URL for debugging
-        _LOGGER.warning("Camera stream: url=%s", url)
-        return url
+        resp = await session.get(url)
+        return resp
+
+    async def stream_source(self) -> str | None:
+        """Return None to disable stream worker and use MJPEG proxy."""
+        return None
