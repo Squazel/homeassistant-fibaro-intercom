@@ -95,11 +95,6 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         # Return None to avoid including dummy access token in state
         return None
 
-    @property
-    def supported_features(self) -> CameraEntityFeature:
-        """Return supported features."""
-        return CameraEntityFeature(0)
-
     def _encoded_credentials(self):
         """Return URL-encoded username and password as a tuple."""
         import urllib.parse
