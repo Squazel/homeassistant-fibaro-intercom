@@ -1,6 +1,6 @@
 {
   "domain": "fibaro_intercom",
-  "name": "FIBARO Intercom",
+  "name": "FIBARO Intercom Integration",
   "codeowners": ["@Squazel"],
   "config_flow": true,
   "dependencies": ["http"],

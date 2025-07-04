@@ -119,7 +119,8 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             session = async_get_clientsession(self.hass, verify_ssl=False)
             username, password = self._encoded_credentials()
             url = f"http://{username}:{password}@{self.coordinator.host}:{CAMERA_PORT}{CAMERA_STILL_JPEG}"
-
+            # Log the full URL for debugging
+            _LOGGER.warning("Camera fetch: url=%s", url)
             async with session.get(url, timeout=10) as response:
                 if response.status == 200:
                     return await response.read()
@@ -142,7 +143,10 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             return None
 
         username, password = self._encoded_credentials()
-        return (
+        url = (
             f"http://{username}:{password}@"
             f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
         )
+        # Log the full URL for debugging
+        _LOGGER.warning("Camera stream: url=%s", url)
+        return url
