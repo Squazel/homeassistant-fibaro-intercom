@@ -74,7 +74,8 @@
             overflow: hidden;
             background: #000;
             min-height: 200px;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23222"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="%23999" font-family="Arial" font-size="12">Camera Feed</text></svg>');
+            cursor: pointer;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23222"/><text x="50" y="40" text-anchor="middle" dy=".3em" fill="%23999" font-family="Arial" font-size="10">Picture Entity Card</text><text x="50" y="55" text-anchor="middle" dy=".3em" fill="%23999" font-family="Arial" font-size="8">(Camera Feed)</text><text x="50" y="70" text-anchor="middle" dy=".3em" fill="%23666" font-family="Arial" font-size="8">Click to open dialog</text></svg>');
             background-size: cover;
             background-position: center;
         }
@@ -187,25 +188,23 @@
                         Gate
                     </button>
                 </div>
-                
-                <div class="camera-controls">
-                    <button class="camera-button" onclick="simulateClick(this, 'Snapshot downloaded!')">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <path d="M9,2V7.38L10.38,6L17.35,13L15.94,14.38L14.56,13L13.15,14.38L20.11,21.38L18.7,22.79L11.74,15.82L5.77,21.79L4.35,20.38L10.32,14.41L8.91,13L4,17.91V2H9M15,9A1,1 0 0,1 16,8A1,1 0 0,1 17,9A1,1 0 0,1 16,10A1,1 0 0,1 15,9Z"/>
-                        </svg>
-                        Download Snapshot
-                    </button>
-                </div>
             </div>
         </div>
         
         <div class="code-example">
-<pre>type: custom:fibaro-intercom-card
+<pre># Basic configuration
+type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
+
+# Optional relay configuration  
 relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
 relay_0_label: "Door"
-relay_1_label: "Gate"</pre>
+relay_1_label: "Gate"
+
+# Optional styling
+card_height: "400px"
+button_height: "60px"</pre>
         </div>
     </div>
 

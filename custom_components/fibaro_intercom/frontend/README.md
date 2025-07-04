@@ -11,11 +11,10 @@ A custom Lovelace card for the FIBARO Intercom integration that provides a unifi
 
 ## Features
 
-- **Camera Display**: Shows live camera feed or still images with configurable refresh intervals
+- **Camera Display**: Uses Home Assistant's built-in picture-entity card for reliable camera viewing
 - **Relay Controls**: Two buttons for controlling door (relay 0) and gate (relay 1)
-- **Snapshot Download**: Download still images from the camera
 - **Status Indicator**: Visual connection status indicator
-- **Customizable**: Configure labels, icons, and refresh intervals
+- **Customizable**: Configure labels and button styling
 
 ## Preview
 
@@ -70,11 +69,8 @@ relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
 relay_0_label: "Front Door"
 relay_1_label: "Driveway Gate"
-show_live_stream: true
-still_refresh_interval: 30
 card_height: "400px"
 button_height: "60px"
-camera_icon: "mdi:camera"
 ```
 
 ### Configuration Options
@@ -86,11 +82,8 @@ camera_icon: "mdi:camera"
 | `relay_1_entity` | string | `binary_sensor.fibaro_intercom_relay_1` | Relay 1 binary sensor entity |
 | `relay_0_label` | string | `Relay 0` | Label for relay 0 button |
 | `relay_1_label` | string | `Relay 1` | Label for relay 1 button |
-| `show_live_stream` | boolean | `true` | Show live stream vs still images |
-| `still_refresh_interval` | number | `30` | Refresh interval for still images (seconds) |
 | `card_height` | string | `400px` | Total card height |
 | `button_height` | string | `60px` | Height of control buttons |
-| `camera_icon` | string | `mdi:camera` | Icon for snapshot button |
 
 **Note**: Icons for relay buttons are automatically taken from the entity's icon attribute. The integration sets default icons (`mdi:door` for relay 0, `mdi:gate` for relay 1) which can be customized in Home Assistant's entity settings.
 
@@ -98,20 +91,15 @@ camera_icon: "mdi:camera"
 
 ### Camera View
 
-- **Still Images**: By default, the card shows still images that refresh at the configured interval
-- **Live Stream**: Click the camera image to open the full camera dialog with live stream
-- **Auto-refresh**: Still images automatically refresh based on the `still_refresh_interval` setting
+- **Picture Entity Card**: Uses Home Assistant's built-in picture-entity card for optimal camera display
+- **Live Stream**: Click the camera to open the full camera dialog with live stream
+- **Automatic Updates**: Camera view updates automatically when entity state changes
 
 ### Relay Controls
 
 - **Door Button** (left): Triggers relay 0 with a 5-second timeout
 - **Gate Button** (right): Triggers relay 1 with a 5-second timeout
 - **Visual Feedback**: Buttons change color when activated and show disabled state when unavailable
-
-### Snapshot Download
-
-- **Download Button**: Click the camera button below the relay controls to download a snapshot
-- **Automatic Naming**: Downloads are automatically named with timestamp
 
 ## Troubleshooting
 
@@ -152,16 +140,9 @@ relay_0_entity: binary_sensor.front_door_relay_0
 relay_1_entity: binary_sensor.front_door_relay_1
 ```
 
-### Different Refresh Rates
+### Different Camera Settings
 
-For slower networks or to reduce bandwidth:
-
-```yaml
-type: custom:fibaro-intercom-card
-camera_entity: camera.fibaro_intercom_camera
-show_live_stream: false
-still_refresh_interval: 60  # Refresh every minute
-```
+All camera-specific settings (live stream, refresh rates, image quality) are handled by the picture-entity card and can be configured through Home Assistant's camera entity settings.
 
 ### Custom Styling
 

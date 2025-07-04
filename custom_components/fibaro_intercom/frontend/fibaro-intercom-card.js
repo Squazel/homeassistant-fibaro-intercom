@@ -23,6 +23,8 @@ class FibaroIntercomCard extends HTMLElement {
       throw new Error('You need to define a camera_entity');
     }
     
+    const previousCameraEntity = this._config?.camera_entity;
+    
     this._config = {
       // Required
       camera_entity: config.camera_entity,
@@ -33,13 +35,6 @@ class FibaroIntercomCard extends HTMLElement {
       relay_0_label: config.relay_0_label || 'Relay 0',
       relay_1_label: config.relay_1_label || 'Relay 1',
       
-      // Camera options
-      show_live_stream: config.show_live_stream !== false, // default true
-      still_refresh_interval: config.still_refresh_interval || 30, // seconds
-      
-      // Custom icons/images (fallbacks if entity doesn't have icon)
-      camera_icon: config.camera_icon || 'mdi:camera',
-      
       // Styling
       card_height: config.card_height || '400px',
       button_height: config.button_height || '60px',
@@ -48,7 +43,11 @@ class FibaroIntercomCard extends HTMLElement {
     };
     
     this._render();
-    this._createPictureEntityCard();
+    
+    // Only recreate the picture card if the camera entity changed
+    if (!this._pictureCard || previousCameraEntity !== config.camera_entity) {
+      this._createPictureEntityCard();
+    }
   }
 
   set hass(hass) {
@@ -130,30 +129,6 @@ class FibaroIntercomCard extends HTMLElement {
           transform: none;
         }
         
-        .camera-controls {
-          display: flex;
-          justify-content: center;
-        }
-        
-        .camera-button {
-          height: 40px;
-          padding: 0 16px;
-          border: none;
-          border-radius: 8px;
-          background: var(--secondary-color);
-          color: var(--text-primary-color);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          transition: all 0.2s ease;
-        }
-        
-        .camera-button:hover {
-          background: var(--secondary-color-dark);
-        }
-        
         .icon {
           width: 20px;
           height: 20px;
@@ -189,8 +164,6 @@ class FibaroIntercomCard extends HTMLElement {
             <!-- Picture entity card will be inserted here -->
           </div>
         </div>
-          </div>
-        </div>
         
         <div class="controls">
           <div class="relay-controls">
@@ -201,13 +174,6 @@ class FibaroIntercomCard extends HTMLElement {
             <button class="relay-button" id="gate-button">
               <ha-icon id="gate-icon" icon="mdi:gate" class="icon"></ha-icon>
               ${this._config.relay_1_label}
-            </button>
-          </div>
-          
-          <div class="camera-controls">
-            <button class="camera-button" id="snapshot-button">
-              <ha-icon icon="${this._config.camera_icon}" class="icon"></ha-icon>
-              Download Snapshot
             </button>
           </div>
         </div>
@@ -221,13 +187,9 @@ class FibaroIntercomCard extends HTMLElement {
   _attachEventListeners() {
     const doorButton = this.shadowRoot.getElementById('door-button');
     const gateButton = this.shadowRoot.getElementById('gate-button');
-    const snapshotButton = this.shadowRoot.getElementById('snapshot-button');
-    const cameraImage = this.shadowRoot.getElementById('camera-image');
 
     doorButton.addEventListener('click', () => this._openRelay(0));
     gateButton.addEventListener('click', () => this._openRelay(1));
-    snapshotButton.addEventListener('click', () => this._downloadSnapshot());
-    cameraImage.addEventListener('click', () => this._showCameraDialog());
   }
 
   _getEntityIcon(entityId) {
@@ -253,12 +215,17 @@ class FibaroIntercomCard extends HTMLElement {
     };
     
     this._pictureCard.setConfig(pictureConfig);
-    
-    // Insert the card into the container
+    this._insertPictureCard();
+  }
+
+  _insertPictureCard() {
     const container = this.shadowRoot.getElementById('picture-entity-container');
-    if (container) {
+    if (container && this._pictureCard) {
       container.innerHTML = '';
       container.appendChild(this._pictureCard);
+      if (this._hass) {
+        this._pictureCard.hass = this._hass;
+      }
     }
   }
 
@@ -271,11 +238,9 @@ class FibaroIntercomCard extends HTMLElement {
   _updateStates() {
     if (!this._hass) return;
 
-    // Update connection status
+    // Update connection status based on camera entity
     const statusIndicator = this.shadowRoot.getElementById('status-indicator');
     const cameraEntity = this._hass.states[this._config.camera_entity];
-    const relay0Entity = this._hass.states[this._config.relay_0_entity];
-    const relay1Entity = this._hass.states[this._config.relay_1_entity];
     
     if (cameraEntity && cameraEntity.state !== 'unavailable') {
       statusIndicator.classList.add('connected');
@@ -283,9 +248,9 @@ class FibaroIntercomCard extends HTMLElement {
       statusIndicator.classList.remove('connected');
     }
 
-    // Camera is now handled by the embedded picture-entity card
-
     // Update relay button states
+    const relay0Entity = this._hass.states[this._config.relay_0_entity];
+    const relay1Entity = this._hass.states[this._config.relay_1_entity];
     const doorButton = this.shadowRoot.getElementById('door-button');
     const gateButton = this.shadowRoot.getElementById('gate-button');
     const doorIcon = this.shadowRoot.getElementById('door-icon');
@@ -298,13 +263,14 @@ class FibaroIntercomCard extends HTMLElement {
     if (doorIcon) doorIcon.setAttribute('icon', relay0Icon);
     if (gateIcon) gateIcon.setAttribute('icon', relay1Icon);
     
+    // Update button availability and appearance
     const relay0Available = relay0Entity && relay0Entity.state !== 'unavailable';
     const relay1Available = relay1Entity && relay1Entity.state !== 'unavailable';
     
     doorButton.disabled = !relay0Available;
     gateButton.disabled = !relay1Available;
     
-    // Update button appearance based on relay state (on = relay is open)
+    // Update button colors based on relay state (on = relay is open)
     if (relay0Entity && relay0Entity.state === 'on') {
       doorButton.style.background = 'var(--success-color)';
     } else {
@@ -347,42 +313,6 @@ class FibaroIntercomCard extends HTMLElement {
         button.style.background = 'var(--primary-color)';
         button.disabled = false;
       }, 2000);
-    }
-  }
-
-  _showCameraDialog() {
-    if (!this._hass) return;
-
-    // Use Home Assistant's built-in camera dialog
-    const event = new Event('hass-more-info', { bubbles: true, composed: true });
-    event.detail = { entityId: this._config.camera_entity };
-    this.dispatchEvent(event);
-  }
-
-  async _downloadSnapshot() {
-    if (!this._hass) return;
-
-    try {
-      const response = await fetch(`/api/camera_proxy/${this._config.camera_entity}`);
-      const blob = await response.blob();
-      
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fibaro-intercom-snapshot-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error('Failed to download snapshot:', error);
-    }
-  }
-
-  disconnectedCallback() {
-    if (this._refreshTimer) {
-      clearTimeout(this._refreshTimer);
     }
   }
 
@@ -487,25 +417,6 @@ class FibaroIntercomCardEditor extends HTMLElement {
           ></ha-textfield>
         </div>
         
-        <div class="section-title">Camera Options</div>
-        
-        <div class="config-row">
-          <label>Show Live Stream (vs Still Images)</label>
-          <ha-switch 
-            id="show_live_stream" 
-            .checked="${this._config.show_live_stream !== false}"
-          ></ha-switch>
-        </div>
-        
-        <div class="config-row">
-          <label>Still Image Refresh Interval (seconds)</label>
-          <ha-textfield 
-            id="still_refresh_interval" 
-            type="number"
-            .value="${this._config.still_refresh_interval || 30}"
-          ></ha-textfield>
-        </div>
-        
         <div class="section-title">Styling</div>
         
         <div class="config-row">
@@ -540,8 +451,10 @@ class FibaroIntercomCardEditor extends HTMLElement {
         
         if (e.target.tagName === 'HA-SWITCH') {
           value = e.target.checked;
-        } else if (key === 'still_refresh_interval') {
-          value = parseInt(value) || 30;
+        } else if (key === 'card_height' || key === 'button_height') {
+          // Keep as string for CSS values
+        } else {
+          // Other text fields, keep as string
         }
         
         this._config[key] = value;
