@@ -7,7 +7,7 @@ import logging
 import urllib.parse
 
 from aiohttp import BasicAuth
-from homeassistant.components.camera import Camera, async_aiohttp_proxy_stream
+from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -135,19 +135,13 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
             _LOGGER.error("Error fetching camera image: %s", ex)
             return None
 
-    async def async_mjpeg_stream(self, request):
-        """Serve an MJPEG stream from the camera."""
+    async def stream_source(self) -> str | None:
+        """Return the source of the MJPEG stream."""
         if not self.available:
             return None
-        session = async_get_clientsession(self.hass, verify_ssl=False)
+
         username, password = self._encoded_credentials()
-        url = (
+        return (
             f"http://{username}:{password}@"
             f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
         )
-        response = await session.get(url)
-        return await async_aiohttp_proxy_stream(self.hass, request, response)
-
-    async def stream_source(self) -> str | None:
-        """Return None to disable stream worker and use MJPEG proxy."""
-        return None
