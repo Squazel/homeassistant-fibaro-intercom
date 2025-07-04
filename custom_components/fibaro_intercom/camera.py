@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import urllib.parse
 
 from aiohttp import BasicAuth
 from homeassistant.components.camera import Camera
@@ -100,6 +101,13 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
 
         return CameraEntityFeature.STREAM
 
+    def _encoded_credentials(self):
+        """Return URL-encoded username and password as a tuple."""
+        import urllib.parse
+        username = urllib.parse.quote(self.coordinator.username, safe="")
+        password = urllib.parse.quote(self.coordinator.password, safe="")
+        return username, password
+
     async def async_camera_image(
         self, width: int | None = None, height: int | None = None
     ) -> bytes | None:
@@ -109,10 +117,10 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
 
         try:
             session = async_get_clientsession(self.hass, verify_ssl=False)
-            auth = BasicAuth(self.coordinator.username, self.coordinator.password)
-            url = f"http://{self.coordinator.host}:{CAMERA_PORT}{CAMERA_STILL_JPEG}"
+            username, password = self._encoded_credentials()
+            url = f"http://{username}:{password}@{self.coordinator.host}:{CAMERA_PORT}{CAMERA_STILL_JPEG}"
 
-            async with session.get(url, auth=auth, timeout=10) as response:
+            async with session.get(url, timeout=10) as response:
                 if response.status == 200:
                     return await response.read()
                 else:
@@ -133,8 +141,8 @@ class FibaroIntercomCamera(CoordinatorEntity, Camera):
         if not self.available:
             return None
 
-        # Return MJPEG stream URL with authentication
+        username, password = self._encoded_credentials()
         return (
-            f"http://{self.coordinator.username}:{self.coordinator.password}@"
+            f"http://{username}:{password}@"
             f"{self.coordinator.host}:{CAMERA_PORT}{CAMERA_LIVE_MJPEG}"
         )
