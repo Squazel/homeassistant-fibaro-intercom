@@ -200,25 +200,22 @@ class FibaroIntercomCard extends HTMLElement {
 
   _createPictureEntityCard() {
     if (!this._config.camera_entity) return;
-    // Wait for hui-picture-entity-card to be defined
-    window.customElements.whenDefined('hui-picture-entity-card').then(() => {
-      this._pictureCard = document.createElement('hui-picture-entity-card');
-      const pictureConfig = {
-        type: 'picture-entity',
-        entity: this._config.camera_entity,
-        show_state: false,
-        show_name: false,
-        camera_view: 'auto',
-        fit_mode: 'cover'
-      };
-      if (typeof this._pictureCard.setConfig === 'function') {
-        this._pictureCard.setConfig(pictureConfig);
-        this._insertPictureCard();
-      } else {
-        // Optionally log error for debugging
-        // console.error('hui-picture-entity-card does not have setConfig method');
-      }
-    });
+    
+    // Create the picture-entity card element
+    this._pictureCard = document.createElement('hui-picture-entity-card');
+    
+    // Set the picture-entity card configuration
+    const pictureConfig = {
+      type: 'picture-entity',
+      entity: this._config.camera_entity,
+      show_state: false,
+      show_name: false,
+      camera_view: 'auto',
+      fit_mode: 'cover'
+    };
+    
+    this._pictureCard.setConfig(pictureConfig);
+    this._insertPictureCard();
   }
 
   _insertPictureCard() {
