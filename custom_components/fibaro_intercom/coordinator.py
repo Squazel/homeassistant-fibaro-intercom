@@ -210,7 +210,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                 except Exception as ex:
                     _LOGGER.error("Error handling message: %s", ex)
         except ConnectionClosed:
-            _LOGGER.warning("WebSocket connection closed")
+            _LOGGER.info("WebSocket connection closed, attempting to reconnect...")
             self.connected = False
             # Update coordinator data with disconnection status
             self.async_set_updated_data(
@@ -235,7 +235,19 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         elif method == METHOD_BUTTON_STATE_CHANGED:
             await self._async_handle_button_state_changed(data.get("params", {}))
         elif "error" in data:
-            _LOGGER.warning("Received error: %s", data["error"])
+            error = data["error"]
+            # Handle expired token or invalid token
+            if (
+                error.get("message") == "Expired"
+                or error.get("data", {}).get("name") == "InvalidToken"
+            ):
+                _LOGGER.info("Token expired or invalid, reconnecting...")
+                self.connected = False
+                await self.async_disconnect()
+                await asyncio.sleep(2)  # brief pause before reconnect
+                await self.async_connect()
+            else:
+                _LOGGER.warning("Unhandled error from intercom: %s", error)
 
     async def _async_handle_relay_state_changed(self, params: dict[str, Any]) -> None:
         """Handle relay state change."""
@@ -273,7 +285,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     async def _async_reconnect_loop(self) -> None:
         """Reconnect with exponential backoff."""
         backoff = 1
-        max_backoff = 300
+        max_backoff = 600
 
         while not self._stop_event.is_set() and not self.connected:
             try:
@@ -281,9 +293,16 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                 await self._async_connect_websocket()
                 backoff = 1  # Reset backoff on successful connection
             except Exception as ex:
-                _LOGGER.warning(
-                    "Reconnection failed: %s. Retrying in %s seconds", ex, backoff
-                )
+                if backoff < max_backoff:
+                    _LOGGER.info(
+                        "Reconnection failed: %s. Retrying in %s seconds", ex, backoff
+                    )
+                else:
+                    _LOGGER.warning(
+                        "Reconnection failed: %s. Retrying in %s seconds (max backoff reached)",
+                        ex,
+                        backoff,
+                    )
                 try:
                     await asyncio.wait_for(self._stop_event.wait(), timeout=backoff)
                     break  # Stop event was set
