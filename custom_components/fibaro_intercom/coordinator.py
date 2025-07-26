@@ -337,8 +337,8 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
             }
         )
 
-    async def async_open_relay(self, relay: int, timeout: int | None = None) -> bool:
-        """Open a relay."""
+    async def async_open_relay(self, relay: int, timeout: int | None = None) -> None:
+        """Open a relay (fire and forget)."""
         if not self.connected or not self.token:
             raise ConnectionError("Not connected to intercom")
 
@@ -359,20 +359,9 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         try:
             await self.websocket.send(json.dumps(request))
-
-            # Wait for response (optional, depending on requirements)
-            response = await asyncio.wait_for(self.websocket.recv(), timeout=5)
-            data = json.loads(response)
-
-            if "error" in data:
-                _LOGGER.warning("Relay open failed: %s", data["error"])
-                return False
-
-            return data.get("result", False)
-
         except Exception as ex:
             _LOGGER.error("Failed to open relay %s: %s", relay, ex)
-            return False
+        # No waiting for response, let main listener handle errors/state
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update coordinator data."""
