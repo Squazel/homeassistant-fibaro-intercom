@@ -1,6 +1,10 @@
 /**
  * FIBARO Intercom Card for Home Assistant
- * Custom Lovelace card combining camera view with relay controls
+ * A wrapper around picture-glance card with predefined relay controls
+ * 
+ * This card acts as a simplified interface to create a picture-glance card
+ * with sensible defaults for FIBARO Intercom integration, while allowing
+ * full customization via picture_glance_options and entities overrides.
  */
 
 class FibaroIntercomCard extends HTMLElement {
@@ -23,285 +27,72 @@ class FibaroIntercomCard extends HTMLElement {
       throw new Error('You need to define a camera_entity');
     }
     
-    const previousCameraEntity = this._config?.camera_entity;
+    // Store the original config for reference
+    this._originalConfig = { ...config };
     
+    // Build default entities configuration
+    const defaultEntities = [
+      {
+        entity: config.relay_0_entity || 'binary_sensor.fibaro_intercom_relay_0',
+        tap_action: {
+          action: 'perform-action',
+          perform_action: 'fibaro_intercom.open_relay',
+          data: { relay: 0 }
+        }
+      },
+      {
+        entity: config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1',
+        tap_action: {
+          action: 'perform-action',
+          perform_action: 'fibaro_intercom.open_relay',
+          data: { relay: 1 }
+        }
+      }
+    ];
+    
+    // Build picture-glance configuration with defaults and allow overrides
     this._config = {
-      // Required
-      camera_entity: config.camera_entity,
-      
-      // Optional with defaults - these are binary sensors that show relay state
-      relay_0_entity: config.relay_0_entity || 'binary_sensor.fibaro_intercom_relay_0',
-      relay_1_entity: config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1',
-      relay_0_label: config.relay_0_label || 'Relay 0',
-      relay_1_label: config.relay_1_label || 'Relay 1',
-      
-      // Styling
-      card_height: config.card_height || '400px',
-      button_height: config.button_height || '60px',
-      
-      ...config
+      type: 'picture-glance',
+      title: config.title || 'FIBARO Intercom',
+      camera_view: config.camera_view || 'auto',
+      fit_mode: config.fit_mode || 'cover',
+      camera_image: config.camera_entity,
+      entity: config.camera_entity,
+      entities: config.entities || defaultEntities,
+      // Allow any picture-glance options to be overridden
+      ...config.picture_glance_options
     };
     
-    this._render();
-    
-    // Only recreate the camera view if the camera entity changed
-    if (!this._cameraCreated || previousCameraEntity !== config.camera_entity) {
-      this._createCameraView();
-      this._cameraCreated = true;
-    }
+    this._createPictureGlanceCard();
   }
 
   set hass(hass) {
     this._hass = hass;
-    this._updateCameraView();
-    this._updateStates();
-  }
-
-  _render() {
-    this.shadowRoot.innerHTML = `
-      <style>
-        .fibaro-grid {
-          display: grid;
-          grid-template-rows: 1fr auto;
-          gap: 12px;
-          height: ${this._config.card_height};
-          padding: 16px;
-          background: var(--card-background-color);
-          border-radius: var(--border-radius);
-          box-shadow: var(--box-shadow);
-        }
-        
-        .camera-cell {
-          position: relative;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #000;
-          min-height: 200px;
-        }
-        
-        .camera-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-        
-        .status-indicator {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: var(--error-color);
-          z-index: 10;
-        }
-        
-        .status-indicator.connected {
-          background: var(--success-color);
-        }
-        
-        .buttons-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        
-        .relay-button {
-          height: ${this._config.button_height};
-          border: none;
-          border-radius: 8px;
-          background: var(--primary-color);
-          color: var(--text-primary-color);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.2s ease;
-        }
-        
-        .relay-button:hover {
-          background: var(--primary-color-dark);
-          transform: translateY(-1px);
-        }
-        
-        .relay-button:active {
-          transform: translateY(0);
-        }
-        
-        .relay-button:disabled {
-          background: var(--disabled-color);
-          cursor: not-allowed;
-          transform: none;
-        }
-        
-        .icon {
-          width: 20px;
-          height: 20px;
-        }
-        
-        .loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          height: 100%;
-          color: var(--secondary-text-color);
-          font-size: 14px;
-        }
-      </style>
-      
-      <div class="fibaro-grid">
-        <!-- Row 1: Camera -->
-        <div class="camera-cell">
-          <div class="status-indicator" id="status-indicator"></div>
-          <div id="camera-container" class="loading">Loading camera...</div>
-        </div>
-        
-        <!-- Row 2: Button Grid -->
-        <div class="buttons-row">
-          <button class="relay-button" id="door-button">
-            <ha-icon id="door-icon" icon="mdi:door" class="icon"></ha-icon>
-            ${this._config.relay_0_label}
-          </button>
-          <button class="relay-button" id="gate-button">
-            <ha-icon id="gate-icon" icon="mdi:gate" class="icon"></ha-icon>
-            ${this._config.relay_1_label}
-          </button>
-        </div>
-      </div>
-    `;
-    
-    this._attachEventListeners();
-    this._updateStates();
-  }
-
-  _attachEventListeners() {
-    const doorButton = this.shadowRoot.getElementById('door-button');
-    const gateButton = this.shadowRoot.getElementById('gate-button');
-
-    doorButton.addEventListener('click', () => this._openRelay(0));
-    gateButton.addEventListener('click', () => this._openRelay(1));
-  }
-
-  _getEntityIcon(entityId) {
-    if (!this._hass || !entityId) return null;
-    const entity = this._hass.states[entityId];
-    return entity?.attributes?.icon;
-  }
-
-  _createCameraView() {
-    if (!this._config.camera_entity || !this._hass) return;
-    
-    const container = this.shadowRoot.getElementById('camera-container');
-    if (!container) return;
-    
-    // Just use the standard camera card - it handles everything for us
-    const cameraCard = document.createElement('hui-camera-card');
-    cameraCard.setConfig({
-      type: 'camera',
-      entity: this._config.camera_entity,
-      view: 'live'
-    });
-    cameraCard.hass = this._hass;
-    cameraCard.style.cssText = 'width: 100%; height: 100%; border-radius: 8px; overflow: hidden;';
-    
-    container.innerHTML = '';
-    container.appendChild(cameraCard);
-    this._cameraCard = cameraCard;
-  }
-
-  _updateCameraView() {
-    if (this._cameraCard && this._hass) {
-      this._cameraCard.hass = this._hass;
+    if (this._pictureGlanceCard) {
+      this._pictureGlanceCard.hass = hass;
     }
   }
 
-  _updateStates() {
-    if (!this._hass) return;
-
-    // Update connection status based on camera entity
-    const statusIndicator = this.shadowRoot.getElementById('status-indicator');
-    const cameraEntity = this._hass.states[this._config.camera_entity];
+  _createPictureGlanceCard() {
+    if (!this._config.camera_image) return;
     
-    if (cameraEntity && cameraEntity.state !== 'unavailable') {
-      statusIndicator.classList.add('connected');
-    } else {
-      statusIndicator.classList.remove('connected');
-    }
-
-    // Update relay button states
-    const relay0Entity = this._hass.states[this._config.relay_0_entity];
-    const relay1Entity = this._hass.states[this._config.relay_1_entity];
-    const doorButton = this.shadowRoot.getElementById('door-button');
-    const gateButton = this.shadowRoot.getElementById('gate-button');
-    const doorIcon = this.shadowRoot.getElementById('door-icon');
-    const gateIcon = this.shadowRoot.getElementById('gate-icon');
+    // Create the picture-glance card
+    this._pictureGlanceCard = document.createElement('hui-picture-glance-card');
     
-    // Update icons from entity attributes
-    const relay0Icon = this._getEntityIcon(this._config.relay_0_entity) || 'mdi:door';
-    const relay1Icon = this._getEntityIcon(this._config.relay_1_entity) || 'mdi:gate';
+    // Set the config directly - it's already in picture-glance format
+    this._pictureGlanceCard.setConfig(this._config);
     
-    if (doorIcon) doorIcon.setAttribute('icon', relay0Icon);
-    if (gateIcon) gateIcon.setAttribute('icon', relay1Icon);
-    
-    // Update button availability and appearance
-    const relay0Available = relay0Entity && relay0Entity.state !== 'unavailable';
-    const relay1Available = relay1Entity && relay1Entity.state !== 'unavailable';
-    
-    doorButton.disabled = !relay0Available;
-    gateButton.disabled = !relay1Available;
-    
-    // Update button colors based on relay state (on = relay is open)
-    if (relay0Entity && relay0Entity.state === 'on') {
-      doorButton.style.background = 'var(--success-color)';
-    } else {
-      doorButton.style.background = 'var(--primary-color)';
+    if (this._hass) {
+      this._pictureGlanceCard.hass = this._hass;
     }
     
-    if (relay1Entity && relay1Entity.state === 'on') {
-      gateButton.style.background = 'var(--success-color)';
-    } else {
-      gateButton.style.background = 'var(--primary-color)';
-    }
-  }
-
-  async _openRelay(relayNumber) {
-    if (!this._hass) return;
-
-    const button = relayNumber === 0 ? 
-      this.shadowRoot.getElementById('door-button') : 
-      this.shadowRoot.getElementById('gate-button');
-    
-    button.disabled = true;
-    
-    try {
-      await this._hass.callService('fibaro_intercom', 'open_relay', {
-        relay: relayNumber,
-        timeout: 5000 // Default 5 second timeout
-      });
-      
-      // Visual feedback
-      button.style.background = 'var(--success-color)';
-      setTimeout(() => {
-        button.style.background = 'var(--primary-color)';
-        button.disabled = false;
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Failed to open relay:', error);
-      button.style.background = 'var(--error-color)';
-      setTimeout(() => {
-        button.style.background = 'var(--primary-color)';
-        button.disabled = false;
-      }, 2000);
-    }
+    // Clear and append the card
+    this.shadowRoot.innerHTML = '';
+    this.shadowRoot.appendChild(this._pictureGlanceCard);
   }
 
   getCardSize() {
-    return 5; // Approximate card height in grid rows
+    return 3; // Standard picture-glance card size
   }
 
   static getConfigElement() {
@@ -313,8 +104,7 @@ class FibaroIntercomCard extends HTMLElement {
       camera_entity: 'camera.fibaro_intercom_camera',
       relay_0_entity: 'binary_sensor.fibaro_intercom_relay_0',
       relay_1_entity: 'binary_sensor.fibaro_intercom_relay_1',
-      relay_0_label: 'Relay 0',
-      relay_1_label: 'Relay 1'
+      title: 'FIBARO Intercom'
     };
   }
 }
@@ -353,6 +143,11 @@ class FibaroIntercomCardEditor extends HTMLElement {
           margin: 16px 0 8px 0;
           color: var(--primary-text-color);
         }
+        .help-text {
+          font-size: 0.9em;
+          color: var(--secondary-text-color);
+          margin-top: 4px;
+        }
       </style>
       
       <div>
@@ -367,59 +162,58 @@ class FibaroIntercomCardEditor extends HTMLElement {
           ></ha-textfield>
         </div>
         
-        <div class="section-title">Relay Controls</div>
+        <div class="section-title">Basic Configuration</div>
         
         <div class="config-row">
-          <label>Relay 0 Entity (Door)</label>
+          <label>Title</label>
+          <ha-textfield 
+            id="title" 
+            .value="${this._config.title || 'FIBARO Intercom'}"
+            placeholder="FIBARO Intercom"
+          ></ha-textfield>
+        </div>
+        
+        <div class="config-row">
+          <label>Relay 0 Entity</label>
           <ha-textfield 
             id="relay_0_entity" 
             .value="${this._config.relay_0_entity || 'binary_sensor.fibaro_intercom_relay_0'}"
+            placeholder="binary_sensor.fibaro_intercom_relay_0"
           ></ha-textfield>
         </div>
         
         <div class="config-row">
-          <label>Relay 1 Entity (Gate)</label>
+          <label>Relay 1 Entity</label>
           <ha-textfield 
             id="relay_1_entity" 
             .value="${this._config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1'}"
+            placeholder="binary_sensor.fibaro_intercom_relay_1"
+          ></ha-textfield>
+        </div>
+        
+        <div class="section-title">Picture-Glance Options</div>
+        <div class="help-text">These settings control the camera display (same as picture-glance card)</div>
+        
+        <div class="config-row">
+          <label>Camera View</label>
+          <ha-textfield 
+            id="camera_view" 
+            .value="${this._config.camera_view || 'auto'}"
+            placeholder="auto"
           ></ha-textfield>
         </div>
         
         <div class="config-row">
-          <label>Relay 0 Button Label</label>
+          <label>Fit Mode</label>
           <ha-textfield 
-            id="relay_0_label" 
-            .value="${this._config.relay_0_label || 'Relay 0'}"
+            id="fit_mode" 
+            .value="${this._config.fit_mode || 'cover'}"
+            placeholder="cover"
           ></ha-textfield>
         </div>
         
-        <div class="config-row">
-          <label>Relay 1 Button Label</label>
-          <ha-textfield 
-            id="relay_1_label" 
-            .value="${this._config.relay_1_label || 'Relay 1'}"
-          ></ha-textfield>
-        </div>
-        
-        <div class="section-title">Styling</div>
-        
-        <div class="config-row">
-          <label>Card Height</label>
-          <ha-textfield 
-            id="card_height" 
-            .value="${this._config.card_height || '400px'}"
-            placeholder="400px"
-          ></ha-textfield>
-        </div>
-        
-        <div class="config-row">
-          <label>Button Height</label>
-          <ha-textfield 
-            id="button_height" 
-            .value="${this._config.button_height || '60px'}"
-            placeholder="60px"
-          ></ha-textfield>
-        </div>
+        <div class="section-title">Advanced</div>
+        <div class="help-text">For custom entities or overrides, edit the YAML directly</div>
       </div>
     `;
     

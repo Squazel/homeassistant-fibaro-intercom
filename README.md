@@ -6,15 +6,15 @@
 [![hassfest](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/hassfest.yml)
 [![CodeQL](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/codeql.yml/badge.svg)](https://github.com/Squazel/homeassistant-fibaro-intercom/actions/workflows/codeql.yml)
 
-A custom Home Assistant integration for controlling and monitoring FIBARO Intercom devices over their JSON-RPC 2.0 WebSocket API.
+A custom Home Assistant integration for controlling and monitoring FIBARO Intercom devices over their JSON-RPC 2.0 WebSocket API with reliable call detection and relay control capabilities.
 
 ## Features
 
-- **Real-time Connection**: Persistent WebSocket connection with automatic reconnection
+- **Real-time Connection**: Persistent WebSocket connection with automatic reconnection and native keepalive
 - **Relay Control**: Open door/gate relays with optional timeout
-- **Doorbell Monitoring**: Real-time doorbell press detection
+- **Doorbell Monitoring**: Real-time doorbell press detection to trigger automations
 - **Camera Integration**: Access to live video stream and still images
-- **Event Handling**: Home Assistant events for doorbell presses
+- **Event Handling**: Home Assistant events for doorbell presses and relay events
 - **Custom Lovelace Card**: Unified dashboard card with camera and controls
 - **Robust Error Handling**: Comprehensive error handling and logging
 
@@ -46,22 +46,21 @@ A custom Home Assistant integration for controlling and monitoring FIBARO Interc
 3. Search for "FIBARO Intercom"
 4. Enter your intercom details:
    - **Host**: IP address or hostname
-   - **Port**: WebSocket port (default: `8081`)
    - **Username**: Local account username
    - **Password**: Local account password
+
+Note: The integration uses the standard FIBARO Intercom WebSocket port (8081) and cannot be changed.
 
 ### Configuration Options
 
 After setup, you can modify these options:
-- Port number
-- Credentials
-- TLS verification settings
+- Credentials (username/password)
 - Camera stream URLs
 
 ## Entities Created
 
 ### Binary Sensors
-- **FIBARO Intercom Connection Status**: Shows if the integration is connected to the intercom
+- **FIBARO Intercom Connection Status**: Shows if the integration is connected to the intercom (WebSocket connection status)
 - **FIBARO Intercom Relay 0**: Shows the state of the first relay (on = relay is open/activated)
 - **FIBARO Intercom Relay 1**: Shows the state of the second relay (on = relay is open/activated)
 
@@ -107,8 +106,6 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
-relay_0_label: "Front Door"
-relay_1_label: "Gate"
 ```
 
 For complete card documentation, configuration options, and examples, see [`custom_components/fibaro_intercom/frontend/README.md`](custom_components/fibaro_intercom/frontend/README.md).
@@ -177,8 +174,10 @@ For complete API documentation, see the [FIBARO Intercom API Reference](https://
 
 ### WebSocket Endpoint
 ```
-wss://<IP_ADDRESS>:<PORT>/wsock
+wss://<IP_ADDRESS>:8081/wsock
 ```
+
+Note: The integration uses the standard FIBARO Intercom WebSocket port (8081) and maintains a persistent connection with automatic reconnection and native WebSocket keepalive for maximum reliability.
 
 ### Authentication
 ```json
@@ -213,8 +212,8 @@ wss://<IP_ADDRESS>:<PORT>/wsock
 
 1. **Check Network Connectivity**: Ensure Home Assistant can reach the intercom
 2. **Verify Credentials**: Confirm username/password are correct
-3. **Check Port**: Default WebSocket port is 8081
-4. **TLS Issues**: Try disabling TLS verification if using self-signed certificates
+3. **Check Integration Status**: Verify the integration shows as "Connected" in Settings → Devices & Services
+4. **Review Logs**: Check Home Assistant logs for WebSocket connection errors
 
 ### Testing Connection
 

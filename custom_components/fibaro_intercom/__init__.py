@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
@@ -109,10 +110,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             # Find the coordinator for the first configured device
             # In practice, you might want to support targeting specific devices
+            coordinator_found = False
             for coordinator_data in hass.data[DOMAIN].values():
                 if isinstance(coordinator_data, FibaroIntercomCoordinator):
-                    await coordinator_data.async_open_relay(relay, timeout)
-                    break
+                    coordinator_found = True
+                    try:
+                        await coordinator_data.async_open_relay(relay, timeout)
+                        _LOGGER.info("Successfully sent relay %s open command", relay)
+                        break
+                    except ConnectionError as ex:
+                        _LOGGER.error("Failed to open relay %s: %s", relay, ex)
+                        if not coordinator_data.connected:
+                            _LOGGER.info(
+                                "Coordinator is not connected, connection status: %s",
+                                coordinator_data.connected,
+                            )
+                        raise HomeAssistantError(
+                            f"Not connected to intercom: {ex}"
+                        ) from ex
+                    except Exception as ex:
+                        _LOGGER.error(
+                            "Unexpected error opening relay %s: %s", relay, ex
+                        )
+                        raise HomeAssistantError(f"Failed to open relay: {ex}") from ex
+
+            if not coordinator_found:
+                raise HomeAssistantError("No FIBARO Intercom coordinator found")
 
         hass.services.async_register(
             DOMAIN,

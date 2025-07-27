@@ -18,7 +18,7 @@ You can preview the card before installation by opening [`custom_components/fiba
 The custom card is automatically installed when you install the FIBARO Intercom integration:
 
 1. Install the FIBARO Intercom integration
-2. Go to your Lovelace dashboard  
+2. Go to your Lovelace dashboard
 3. Add a new card
 4. Choose "Custom: FIBARO Intercom Card"
 5. Configure the card with your camera entity
@@ -28,8 +28,6 @@ The custom card is automatically installed when you install the FIBARO Intercom 
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
-relay_0_label: "Front Door"
-relay_1_label: "Driveway Gate"
 ```
 
 ## Complete Documentation

@@ -211,20 +211,26 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                     _LOGGER.error("Error handling message: %s", ex)
         except ConnectionClosed:
             _LOGGER.info("WebSocket connection closed, attempting to reconnect...")
-            self.connected = False
-            # Update coordinator data with disconnection status
-            self.async_set_updated_data(
-                {
-                    "connected": False,
-                    "relay_states": self.relay_states,
-                }
-            )
-            if not self._stop_event.is_set():
-                # Start reconnection if not stopping
-                if not self._reconnect_task or self._reconnect_task.done():
-                    self._reconnect_task = asyncio.create_task(
-                        self._async_reconnect_loop()
-                    )
+            self._handle_disconnection()
+        except Exception as ex:
+            _LOGGER.warning("WebSocket connection lost due to unexpected error: %s", ex)
+            self._handle_disconnection()
+
+    def _handle_disconnection(self) -> None:
+        """Handle WebSocket disconnection and trigger reconnection."""
+        self.connected = False
+        # Update coordinator data with disconnection status
+        self.async_set_updated_data(
+            {
+                "connected": False,
+                "relay_states": self.relay_states,
+            }
+        )
+        if not self._stop_event.is_set():
+            # Start reconnection if not stopping
+            if not self._reconnect_task or self._reconnect_task.done():
+                _LOGGER.info("Starting reconnection task...")
+                self._reconnect_task = asyncio.create_task(self._async_reconnect_loop())
 
     async def _async_handle_message(self, data: dict[str, Any]) -> None:
         """Handle incoming WebSocket message."""
@@ -359,8 +365,24 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         try:
             await self.websocket.send(json.dumps(request))
+            _LOGGER.debug("Sent relay %s open command", relay)
         except Exception as ex:
             _LOGGER.error("Failed to open relay %s: %s", relay, ex)
+            # Mark as disconnected if sending failed
+            if self.connected:
+                self.connected = False
+                self.async_set_updated_data(
+                    {
+                        "connected": False,
+                        "relay_states": self.relay_states,
+                    }
+                )
+                # Trigger reconnection
+                if not self._reconnect_task or self._reconnect_task.done():
+                    self._reconnect_task = asyncio.create_task(
+                        self._async_reconnect_loop()
+                    )
+            raise
         # No waiting for response, let main listener handle errors/state
 
     async def _async_update_data(self) -> dict[str, Any]:

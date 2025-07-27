@@ -1,6 +1,6 @@
-# FIBARO Intercom Custom Card
+# FIBARO Intercom Card
 
-A custom Lovelace card for the FIBARO Intercom integration that provides a unified interface for camera viewing and relay control.
+A custom Lovelace card for FIBARO Intercom that wraps the native `picture-glance` card with predefined relay controls and sensible defaults.
 
 ## Quick Start
 
@@ -13,8 +13,9 @@ A custom Lovelace card for the FIBARO Intercom integration that provides a unifi
 
 - **Camera Display**: Uses Home Assistant's built-in picture-entity card for reliable camera viewing
 - **Relay Controls**: Two buttons for controlling door (relay 0) and gate (relay 1)
-- **Status Indicator**: Visual connection status indicator
+- **Automatic Configuration**: Wraps the native picture-glance card with sensible defaults
 - **Customizable**: Configure labels and button styling
+- **Simple Integration**: Works seamlessly with existing FIBARO Intercom entities
 
 ## Preview
 
@@ -67,10 +68,7 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
-relay_0_label: "Front Door"
-relay_1_label: "Driveway Gate"
-card_height: "400px"
-button_height: "60px"
+title: "Front Door Intercom"
 ```
 
 ### Configuration Options
@@ -80,12 +78,11 @@ button_height: "60px"
 | `camera_entity` | string | **Required** | Camera entity ID |
 | `relay_0_entity` | string | `binary_sensor.fibaro_intercom_relay_0` | Relay 0 binary sensor entity |
 | `relay_1_entity` | string | `binary_sensor.fibaro_intercom_relay_1` | Relay 1 binary sensor entity |
-| `relay_0_label` | string | `Relay 0` | Label for relay 0 button |
-| `relay_1_label` | string | `Relay 1` | Label for relay 1 button |
-| `card_height` | string | `400px` | Total card height |
-| `button_height` | string | `60px` | Height of control buttons |
+| `title` | string | `FIBARO Intercom` | Card title |
+| `camera_view` | string | `auto` | Camera view mode (auto, live) |
+| `fit_mode` | string | `cover` | How the camera image fits (cover, contain, fill) |
 
-**Note**: Icons for relay buttons are automatically taken from the entity's icon attribute. The integration sets default icons (`mdi:door` for relay 0, `mdi:gate` for relay 1) which can be customized in Home Assistant's entity settings.
+**Note**: Button labels and icons are taken from the entity's friendly name and icon attributes in Home Assistant. To customize them, edit the entity settings in **Settings** → **Devices & Services** → **Entities**.
 
 ## Usage
 
@@ -146,13 +143,27 @@ All camera-specific settings (live stream, refresh rates, image quality) are han
 
 ### Custom Styling
 
+The card now uses the standard picture-glance card styling. For custom appearance, you can:
+
+1. **Customize Entity Names**: Set friendly names for your entities to control button labels:
+```yaml
+homeassistant:
+  customize:
+    binary_sensor.fibaro_intercom_relay_0:
+      friendly_name: "🚪 Main Entrance"
+    binary_sensor.fibaro_intercom_relay_1:
+      friendly_name: "🚗 Vehicle Gate"
+```
+
+2. **Use Theme Variables**: The card respects Home Assistant theme variables for colors and styling.
+
+3. **Override Picture-Glance Options**: Pass any picture-glance configuration through `picture_glance_options`:
 ```yaml
 type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
-card_height: "500px"
-button_height: "80px"
-relay_0_label: "🚪 Main Entrance"
-relay_1_label: "🚗 Vehicle Gate"
+picture_glance_options:
+  theme: dark
+  aspect_ratio: "16:9"
 ```
 
 ## Integration with Automations
