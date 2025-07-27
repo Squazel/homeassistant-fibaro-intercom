@@ -200,27 +200,26 @@ class FibaroIntercomCard extends HTMLElement {
 
   _createPictureEntityCard() {
     if (!this._config.camera_entity) return;
-    console.log('Creating hui-picture-entity-card element...');
-
-    // Create the picture-entity card element
-    this._pictureCard = document.createElement('hui-picture-entity-card');
-    
-    // Set the picture-entity card configuration
-    const pictureConfig = {
-      type: 'picture-entity',
-      entity: this._config.camera_entity,
-      show_state: false,
-      show_name: false,
-      camera_view: 'auto',
-      fit_mode: 'cover'
-    };
-    if (typeof this._pictureCard.setConfig === 'function') {
-      console.log('setConfig is a function, configuring card...');
-      this._pictureCard.setConfig(pictureConfig);
-    } else {
-      console.error('setConfig is NOT a function on hui-picture-entity-card:', this._pictureCard);
-    }
-    this._insertPictureCard();
+    console.log('Checking hui-picture-entity-card definition:', window.customElements.get('hui-picture-entity-card'));
+    window.customElements.whenDefined('hui-picture-entity-card').then(() => {
+      console.log('hui-picture-entity-card is now defined:', window.customElements.get('hui-picture-entity-card'));
+      this._pictureCard = document.createElement('hui-picture-entity-card');
+      const pictureConfig = {
+        type: 'picture-entity',
+        entity: this._config.camera_entity,
+        show_state: false,
+        show_name: false,
+        camera_view: 'auto',
+        fit_mode: 'cover'
+      };
+      if (typeof this._pictureCard.setConfig === 'function') {
+        console.log('setConfig is a function, configuring card...');
+        this._pictureCard.setConfig(pictureConfig);
+      } else {
+        console.error('setConfig is NOT a function on hui-picture-entity-card:', this._pictureCard);
+      }
+      this._insertPictureCard();
+    });
   }
 
   _insertPictureCard() {
