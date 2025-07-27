@@ -200,7 +200,8 @@ class FibaroIntercomCard extends HTMLElement {
 
   _createPictureEntityCard() {
     if (!this._config.camera_entity) return;
-    
+    console.log('Creating hui-picture-entity-card element...');
+
     // Create the picture-entity card element
     this._pictureCard = document.createElement('hui-picture-entity-card');
     
@@ -213,8 +214,12 @@ class FibaroIntercomCard extends HTMLElement {
       camera_view: 'auto',
       fit_mode: 'cover'
     };
-    
-    this._pictureCard.setConfig(pictureConfig);
+    if (typeof this._pictureCard.setConfig === 'function') {
+      console.log('setConfig is a function, configuring card...');
+      this._pictureCard.setConfig(pictureConfig);
+    } else {
+      console.error('setConfig is NOT a function on hui-picture-entity-card:', this._pictureCard);
+    }
     this._insertPictureCard();
   }
 
@@ -474,10 +479,12 @@ class FibaroIntercomCardEditor extends HTMLElement {
 }
 
 // Register the custom elements
+console.log('Registering fibaro-intercom-card and editor...');
 customElements.define('fibaro-intercom-card', FibaroIntercomCard);
 customElements.define('fibaro-intercom-card-editor', FibaroIntercomCardEditor);
 
 // Register the card with Home Assistant
+console.log('Pushing fibaro-intercom-card to window.customCards...');
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'fibaro-intercom-card',
