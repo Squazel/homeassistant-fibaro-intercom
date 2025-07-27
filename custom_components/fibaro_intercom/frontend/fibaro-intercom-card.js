@@ -198,38 +198,25 @@ class FibaroIntercomCard extends HTMLElement {
     const container = this.shadowRoot.getElementById('camera-container');
     if (!container) return;
     
-    const cameraEntity = this._hass.states[this._config.camera_entity];
-    if (!cameraEntity) {
-      container.innerHTML = '<div class="loading">Camera entity not found</div>';
-      return;
-    }
+    // Just use the standard camera card - it handles everything for us
+    const cameraCard = document.createElement('hui-camera-card');
+    cameraCard.setConfig({
+      type: 'camera',
+      entity: this._config.camera_entity,
+      view: 'live'
+    });
+    cameraCard.hass = this._hass;
+    cameraCard.style.cssText = 'width: 100%; height: 100%; border-radius: 8px; overflow: hidden;';
     
-    // Simple camera image display
-    const stillUrl = `/api/camera_proxy/${this._config.camera_entity}`;
-    container.innerHTML = `
-      <img 
-        class="camera-image"
-        src="${stillUrl}" 
-        onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'loading\\'>Camera unavailable</div>';"
-      />
-    `;
-    
-    // Refresh the image every 3 seconds for live updates
-    if (this._cameraRefreshInterval) {
-      clearInterval(this._cameraRefreshInterval);
-    }
-    
-    this._cameraRefreshInterval = setInterval(() => {
-      const img = container.querySelector('img');
-      if (img && img.style.display !== 'none') {
-        const baseUrl = stillUrl.split('?')[0];
-        img.src = `${baseUrl}?t=${Date.now()}`;
-      }
-    }, 3000);
+    container.innerHTML = '';
+    container.appendChild(cameraCard);
+    this._cameraCard = cameraCard;
   }
 
   _updateCameraView() {
-    // Camera updates automatically via refresh interval
+    if (this._cameraCard && this._hass) {
+      this._cameraCard.hass = this._hass;
+    }
   }
 
   _updateStates() {
