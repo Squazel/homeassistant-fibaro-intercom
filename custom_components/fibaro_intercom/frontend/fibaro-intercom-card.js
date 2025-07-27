@@ -200,8 +200,26 @@ class FibaroIntercomCard extends HTMLElement {
 
   _createPictureEntityCard() {
     if (!this._config.camera_entity) return;
+    
+    const container = this.shadowRoot.getElementById('picture-entity-container');
+    console.log('Starting _createPictureEntityCard, container:', container);
     console.log('Checking hui-picture-entity-card definition:', window.customElements.get('hui-picture-entity-card'));
+    
+    // Show loading state
+    if (container) {
+      container.innerHTML = '<div class="loading">Loading camera...</div>';
+    }
+    
+    // Add timeout fallback
+    let timeoutId = setTimeout(() => {
+      console.error('Timeout waiting for hui-picture-entity-card to be defined');
+      if (container) {
+        container.innerHTML = '<div class="loading">Camera loading failed</div>';
+      }
+    }, 10000); // 10 second timeout
+    
     window.customElements.whenDefined('hui-picture-entity-card').then(() => {
+      clearTimeout(timeoutId);
       console.log('hui-picture-entity-card is now defined:', window.customElements.get('hui-picture-entity-card'));
       this._pictureCard = document.createElement('hui-picture-entity-card');
       const pictureConfig = {
@@ -215,21 +233,30 @@ class FibaroIntercomCard extends HTMLElement {
       if (typeof this._pictureCard.setConfig === 'function') {
         console.log('setConfig is a function, configuring card...');
         this._pictureCard.setConfig(pictureConfig);
+        console.log('Picture card configured, inserting...');
+        this._insertPictureCard();
       } else {
         console.error('setConfig is NOT a function on hui-picture-entity-card:', this._pictureCard);
       }
-      this._insertPictureCard();
+    }).catch(error => {
+      clearTimeout(timeoutId);
+      console.error('Error waiting for hui-picture-entity-card:', error);
     });
   }
 
   _insertPictureCard() {
     const container = this.shadowRoot.getElementById('picture-entity-container');
+    console.log('_insertPictureCard called, container:', container, 'pictureCard:', this._pictureCard);
     if (container && this._pictureCard) {
       container.innerHTML = '';
       container.appendChild(this._pictureCard);
+      console.log('Picture card appended to container');
       if (this._hass) {
         this._pictureCard.hass = this._hass;
+        console.log('Hass assigned to picture card');
       }
+    } else {
+      console.error('Cannot insert picture card - container or pictureCard missing');
     }
   }
 
