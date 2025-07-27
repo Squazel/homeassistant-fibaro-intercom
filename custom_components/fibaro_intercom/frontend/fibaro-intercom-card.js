@@ -44,34 +44,34 @@ class FibaroIntercomCard extends HTMLElement {
     
     this._render();
     
-    // Only recreate the picture card if the camera entity changed
-    if (!this._pictureCard || previousCameraEntity !== config.camera_entity) {
-      this._createPictureEntityCard();
+    // Only recreate the camera view if the camera entity changed
+    if (!this._cameraCreated || previousCameraEntity !== config.camera_entity) {
+      this._createCameraView();
+      this._cameraCreated = true;
     }
   }
 
   set hass(hass) {
     this._hass = hass;
-    this._updatePictureEntityCard();
+    this._updateCameraView();
     this._updateStates();
   }
 
   _render() {
     this.shadowRoot.innerHTML = `
       <style>
-        .fibaro-card {
+        .fibaro-grid {
+          display: grid;
+          grid-template-rows: 1fr auto;
+          gap: 12px;
+          height: ${this._config.card_height};
+          padding: 16px;
           background: var(--card-background-color);
           border-radius: var(--border-radius);
           box-shadow: var(--box-shadow);
-          padding: 16px;
-          height: ${this._config.card_height};
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
         }
         
-        .camera-container {
-          flex: 1;
+        .camera-cell {
           position: relative;
           border-radius: 8px;
           overflow: hidden;
@@ -79,26 +79,35 @@ class FibaroIntercomCard extends HTMLElement {
           min-height: 200px;
         }
         
-        .picture-entity-card {
+        .camera-image {
           width: 100%;
           height: 100%;
+          object-fit: cover;
           border-radius: 8px;
-          overflow: hidden;
         }
         
-        .controls {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
+        .status-indicator {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: var(--error-color);
+          z-index: 10;
         }
         
-        .relay-controls {
-          display: flex;
-          gap: 8px;
+        .status-indicator.connected {
+          background: var(--success-color);
+        }
+        
+        .buttons-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
         }
         
         .relay-button {
-          flex: 1;
           height: ${this._config.button_height};
           border: none;
           border-radius: 8px;
@@ -134,48 +143,33 @@ class FibaroIntercomCard extends HTMLElement {
           height: 20px;
         }
         
-        .status-indicator {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background: var(--error-color);
-        }
-        
-        .status-indicator.connected {
-          background: var(--success-color);
-        }
-        
         .loading {
           display: flex;
           align-items: center;
           justify-content: center;
           height: 100%;
           color: var(--secondary-text-color);
+          font-size: 14px;
         }
       </style>
       
-      <div class="fibaro-card">
-        <div class="camera-container">
+      <div class="fibaro-grid">
+        <!-- Row 1: Camera -->
+        <div class="camera-cell">
           <div class="status-indicator" id="status-indicator"></div>
-          <div class="picture-entity-card" id="picture-entity-container">
-            <!-- Picture entity card will be inserted here -->
-          </div>
+          <div id="camera-container" class="loading">Loading camera...</div>
         </div>
         
-        <div class="controls">
-          <div class="relay-controls">
-            <button class="relay-button" id="door-button">
-              <ha-icon id="door-icon" icon="mdi:door" class="icon"></ha-icon>
-              ${this._config.relay_0_label}
-            </button>
-            <button class="relay-button" id="gate-button">
-              <ha-icon id="gate-icon" icon="mdi:gate" class="icon"></ha-icon>
-              ${this._config.relay_1_label}
-            </button>
-          </div>
+        <!-- Row 2: Button Grid -->
+        <div class="buttons-row">
+          <button class="relay-button" id="door-button">
+            <ha-icon id="door-icon" icon="mdi:door" class="icon"></ha-icon>
+            ${this._config.relay_0_label}
+          </button>
+          <button class="relay-button" id="gate-button">
+            <ha-icon id="gate-icon" icon="mdi:gate" class="icon"></ha-icon>
+            ${this._config.relay_1_label}
+          </button>
         </div>
       </div>
     `;
@@ -198,72 +192,44 @@ class FibaroIntercomCard extends HTMLElement {
     return entity?.attributes?.icon;
   }
 
-  _createPictureEntityCard() {
-    if (!this._config.camera_entity) return;
+  _createCameraView() {
+    if (!this._config.camera_entity || !this._hass) return;
     
-    const container = this.shadowRoot.getElementById('picture-entity-container');
-    console.log('Starting _createPictureEntityCard, container:', container);
-    console.log('Checking hui-picture-entity-card definition:', window.customElements.get('hui-picture-entity-card'));
+    const container = this.shadowRoot.getElementById('camera-container');
+    if (!container) return;
     
-    // Show loading state
-    if (container) {
-      container.innerHTML = '<div class="loading">Loading camera...</div>';
+    const cameraEntity = this._hass.states[this._config.camera_entity];
+    if (!cameraEntity) {
+      container.innerHTML = '<div class="loading">Camera entity not found</div>';
+      return;
     }
     
-    // Add timeout fallback
-    let timeoutId = setTimeout(() => {
-      console.error('Timeout waiting for hui-picture-entity-card to be defined');
-      if (container) {
-        container.innerHTML = '<div class="loading">Camera loading failed</div>';
-      }
-    }, 10000); // 10 second timeout
+    // Simple camera image display
+    const stillUrl = `/api/camera_proxy/${this._config.camera_entity}`;
+    container.innerHTML = `
+      <img 
+        class="camera-image"
+        src="${stillUrl}" 
+        onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'loading\\'>Camera unavailable</div>';"
+      />
+    `;
     
-    window.customElements.whenDefined('hui-picture-entity-card').then(() => {
-      clearTimeout(timeoutId);
-      console.log('hui-picture-entity-card is now defined:', window.customElements.get('hui-picture-entity-card'));
-      this._pictureCard = document.createElement('hui-picture-entity-card');
-      const pictureConfig = {
-        type: 'picture-entity',
-        entity: this._config.camera_entity,
-        show_state: false,
-        show_name: false,
-        camera_view: 'auto',
-        fit_mode: 'cover'
-      };
-      if (typeof this._pictureCard.setConfig === 'function') {
-        console.log('setConfig is a function, configuring card...');
-        this._pictureCard.setConfig(pictureConfig);
-        console.log('Picture card configured, inserting...');
-        this._insertPictureCard();
-      } else {
-        console.error('setConfig is NOT a function on hui-picture-entity-card:', this._pictureCard);
+    // Refresh the image every 3 seconds for live updates
+    if (this._cameraRefreshInterval) {
+      clearInterval(this._cameraRefreshInterval);
+    }
+    
+    this._cameraRefreshInterval = setInterval(() => {
+      const img = container.querySelector('img');
+      if (img && img.style.display !== 'none') {
+        const baseUrl = stillUrl.split('?')[0];
+        img.src = `${baseUrl}?t=${Date.now()}`;
       }
-    }).catch(error => {
-      clearTimeout(timeoutId);
-      console.error('Error waiting for hui-picture-entity-card:', error);
-    });
+    }, 3000);
   }
 
-  _insertPictureCard() {
-    const container = this.shadowRoot.getElementById('picture-entity-container');
-    console.log('_insertPictureCard called, container:', container, 'pictureCard:', this._pictureCard);
-    if (container && this._pictureCard) {
-      container.innerHTML = '';
-      container.appendChild(this._pictureCard);
-      console.log('Picture card appended to container');
-      if (this._hass) {
-        this._pictureCard.hass = this._hass;
-        console.log('Hass assigned to picture card');
-      }
-    } else {
-      console.error('Cannot insert picture card - container or pictureCard missing');
-    }
-  }
-
-  _updatePictureEntityCard() {
-    if (this._pictureCard && this._hass) {
-      this._pictureCard.hass = this._hass;
-    }
+  _updateCameraView() {
+    // Camera updates automatically via refresh interval
   }
 
   _updateStates() {
