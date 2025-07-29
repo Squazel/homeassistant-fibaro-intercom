@@ -59,6 +59,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         self.relay_states: dict[int, bool] = {0: False, 1: False}
         self._message_id = 0
         self._reconnect_task: asyncio.Task | None = None
+        self._listen_task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
 
         # Subscribe to Home Assistant stop event
@@ -150,13 +151,24 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
 
-        self.websocket = await websockets.connect(uri, ssl=ssl_context)
+        self.websocket = await websockets.connect(
+            uri,
+            ssl=ssl_context,
+            ping_interval=20,  # Send ping every 20 seconds
+            ping_timeout=10,  # Wait 10 seconds for pong response
+            close_timeout=10,  # Wait 10 seconds for close handshake
+        )
+        _LOGGER.info(
+            "WebSocket connected successfully to %s with ping/pong monitoring", uri
+        )
 
         # Authenticate
         await self._async_login()
 
         # Start listening for messages
-        self.hass.async_create_background_task(
+        if self._listen_task and not self._listen_task.done():
+            self._listen_task.cancel()
+        self._listen_task = self.hass.async_create_background_task(
             self._async_listen_messages(), name="fibaro_intercom_listen"
         )
 
@@ -209,8 +221,13 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                     _LOGGER.warning("Received invalid JSON: %s", message)
                 except Exception as ex:
                     _LOGGER.error("Error handling message: %s", ex)
-        except ConnectionClosed:
-            _LOGGER.info("WebSocket connection closed, attempting to reconnect...")
+        except ConnectionClosed as ex:
+            if ex.code == 1000:
+                _LOGGER.info("WebSocket connection closed normally")
+            else:
+                _LOGGER.warning(
+                    "WebSocket connection closed with code %s: %s", ex.code, ex.reason
+                )
             self._handle_disconnection()
         except Exception as ex:
             _LOGGER.warning("WebSocket connection lost due to unexpected error: %s", ex)
@@ -321,6 +338,13 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         """Disconnect from the intercom."""
         self._stop_event.set()
 
+        if self._listen_task and not self._listen_task.done():
+            self._listen_task.cancel()
+            try:
+                await self._listen_task
+            except asyncio.CancelledError:
+                pass
+
         if self._reconnect_task and not self._reconnect_task.done():
             self._reconnect_task.cancel()
             try:
@@ -345,8 +369,22 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def async_open_relay(self, relay: int, timeout: int | None = None) -> None:
         """Open a relay (fire and forget)."""
+        # If not connected, try to reconnect immediately
         if not self.connected or not self.token:
-            raise ConnectionError("Not connected to intercom")
+            _LOGGER.warning(
+                "Not connected, attempting immediate reconnection before relay command"
+            )
+            try:
+                await self._async_connect_websocket()
+                _LOGGER.info("Successfully reconnected before relay command")
+            except Exception as ex:
+                _LOGGER.error("Failed to reconnect before relay command: %s", ex)
+                # Still trigger background reconnection
+                if not self._reconnect_task or self._reconnect_task.done():
+                    self._reconnect_task = asyncio.create_task(
+                        self._async_reconnect_loop()
+                    )
+                raise ConnectionError("Not connected to intercom")
 
         params = {
             "token": self.token,

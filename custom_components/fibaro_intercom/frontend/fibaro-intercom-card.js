@@ -47,6 +47,9 @@ class FibaroIntercomCard extends HTMLElement {
           perform_action: 'fibaro_intercom.open_relay',
           data: { relay: 1 }
         }
+      },
+      {
+        entity: config.connection_status_entity || 'binary_sensor.fibaro_intercom_connection_status'
       }
     ];
     
@@ -104,6 +107,7 @@ class FibaroIntercomCard extends HTMLElement {
       camera_entity: 'camera.fibaro_intercom_camera',
       relay_0_entity: 'binary_sensor.fibaro_intercom_relay_0',
       relay_1_entity: 'binary_sensor.fibaro_intercom_relay_1',
+      connection_status_entity: 'binary_sensor.fibaro_intercom_connection_status',
       title: 'FIBARO Intercom'
     };
   }
@@ -188,6 +192,15 @@ class FibaroIntercomCardEditor extends HTMLElement {
             id="relay_1_entity" 
             .value="${this._config.relay_1_entity || 'binary_sensor.fibaro_intercom_relay_1'}"
             placeholder="binary_sensor.fibaro_intercom_relay_1"
+          ></ha-textfield>
+        </div>
+        
+        <div class="config-row">
+          <label>Connection Status Entity</label>
+          <ha-textfield 
+            id="connection_status_entity" 
+            .value="${this._config.connection_status_entity || 'binary_sensor.fibaro_intercom_connection_status'}"
+            placeholder="binary_sensor.fibaro_intercom_connection_status"
           ></ha-textfield>
         </div>
         
