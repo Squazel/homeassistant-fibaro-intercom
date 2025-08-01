@@ -66,7 +66,13 @@ class FibaroIntercomCard extends HTMLElement {
       ...config.picture_glance_options
     };
     
+    // Try to create the card immediately, with retry if needed
     this._createPictureGlanceCard();
+    
+    // If initial creation failed, try again after a short delay
+    if (!this._pictureGlanceCard) {
+      setTimeout(() => this._createPictureGlanceCard(), 100);
+    }
   }
 
   set hass(hass) {
@@ -77,21 +83,105 @@ class FibaroIntercomCard extends HTMLElement {
   }
 
   _createPictureGlanceCard() {
-    if (!this._config.camera_image) return;
-    
-    // Create the picture-glance card
-    this._pictureGlanceCard = document.createElement('hui-picture-glance-card');
-    
-    // Set the config directly - it's already in picture-glance format
-    this._pictureGlanceCard.setConfig(this._config);
-    
-    if (this._hass) {
-      this._pictureGlanceCard.hass = this._hass;
+    if (!this._config.camera_image) {
+      console.warn('FIBARO Intercom Card: No camera_image configured');
+      return;
     }
     
-    // Clear and append the card
+    console.log('FIBARO Intercom Card: Attempting to create picture-glance card');
+    
+    // Clear shadow root first
     this.shadowRoot.innerHTML = '';
-    this.shadowRoot.appendChild(this._pictureGlanceCard);
+    
+    try {
+      // Use Home Assistant's card creation helper instead of direct element creation
+      const helpers = window.loadCardHelpers && window.loadCardHelpers();
+      
+      if (helpers) {
+        console.log('FIBARO Intercom Card: Using loadCardHelpers to create card');
+        helpers.then((cardHelpers) => {
+          try {
+            this._pictureGlanceCard = cardHelpers.createCardElement(this._config);
+            console.log('FIBARO Intercom Card: Created card using cardHelpers');
+            
+            if (this._hass) {
+              this._pictureGlanceCard.hass = this._hass;
+              console.log('FIBARO Intercom Card: Set hass on picture-glance card');
+            }
+            
+            // Append the card
+            this.shadowRoot.appendChild(this._pictureGlanceCard);
+            console.log('FIBARO Intercom Card: Successfully created and appended picture-glance card');
+          } catch (helperError) {
+            console.warn('FIBARO Intercom Card: cardHelpers failed, falling back to direct creation:', helperError);
+            this._createCardDirectly();
+          }
+        }).catch((error) => {
+          console.warn('FIBARO Intercom Card: loadCardHelpers failed, falling back to direct creation:', error);
+          this._createCardDirectly();
+        });
+      } else {
+        console.log('FIBARO Intercom Card: loadCardHelpers not available, using direct creation');
+        this._createCardDirectly();
+      }
+      
+    } catch (error) {
+      console.error('FIBARO Intercom Card: Failed to create picture-glance card:', error);
+      this._showErrorCard(error);
+    }
+  }
+
+  _createCardDirectly() {
+    try {
+      // Create the picture-glance card element directly
+      this._pictureGlanceCard = document.createElement('hui-picture-glance-card');
+      console.log('FIBARO Intercom Card: Created hui-picture-glance-card element directly');
+      
+      // Wait a tick for the element to be fully constructed
+      setTimeout(() => {
+        try {
+          if (typeof this._pictureGlanceCard.setConfig !== 'function') {
+            throw new Error('hui-picture-glance-card not properly loaded - setConfig method missing');
+          }
+          
+          console.log('FIBARO Intercom Card: Setting config on picture-glance card');
+          this._pictureGlanceCard.setConfig(this._config);
+          
+          if (this._hass) {
+            this._pictureGlanceCard.hass = this._hass;
+            console.log('FIBARO Intercom Card: Set hass on picture-glance card');
+          }
+          
+          // Append the card
+          this.shadowRoot.appendChild(this._pictureGlanceCard);
+          console.log('FIBARO Intercom Card: Successfully created and appended picture-glance card');
+          
+        } catch (configError) {
+          console.error('FIBARO Intercom Card: Failed to configure card:', configError);
+          this._showErrorCard(configError);
+        }
+      }, 0);
+      
+    } catch (error) {
+      console.error('FIBARO Intercom Card: Direct card creation failed:', error);
+      this._showErrorCard(error);
+    }
+  }
+
+  _showErrorCard(error) {
+    this.shadowRoot.innerHTML = `
+      <ha-card>
+        <div class="card-content">
+          <h3>FIBARO Intercom Card Error</h3>
+          <p>Failed to load picture-glance card: ${error.message}</p>
+          <p>Please ensure the card is properly configured with a camera_entity.</p>
+          <details>
+            <summary>Debug Info</summary>
+            <pre>Config: ${JSON.stringify(this._config, null, 2)}</pre>
+          </details>
+        </div>
+      </ha-card>
+    `;
   }
 
   getCardSize() {
@@ -266,8 +356,20 @@ class FibaroIntercomCardEditor extends HTMLElement {
 
 // Register the custom elements
 console.log('Registering fibaro-intercom-card and editor...');
-customElements.define('fibaro-intercom-card', FibaroIntercomCard);
-customElements.define('fibaro-intercom-card-editor', FibaroIntercomCardEditor);
+
+try {
+  customElements.define('fibaro-intercom-card', FibaroIntercomCard);
+  console.log('Successfully registered fibaro-intercom-card');
+} catch (error) {
+  console.error('Failed to register fibaro-intercom-card:', error);
+}
+
+try {
+  customElements.define('fibaro-intercom-card-editor', FibaroIntercomCardEditor);
+  console.log('Successfully registered fibaro-intercom-card-editor');
+} catch (error) {
+  console.error('Failed to register fibaro-intercom-card-editor:', error);
+}
 
 // Register the card with Home Assistant
 console.log('Pushing fibaro-intercom-card to window.customCards...');
@@ -279,3 +381,5 @@ window.customCards.push({
   preview: true,
   documentationURL: 'https://github.com/Squazel/homeassistant-fibaro-intercom'
 });
+
+console.log('fibaro-intercom-card registration complete. Total custom cards:', window.customCards.length);
