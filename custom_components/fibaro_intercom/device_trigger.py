@@ -44,7 +44,7 @@ async def async_get_triggers(
             CONF_DEVICE_ID: device_id,
             CONF_DOMAIN: DOMAIN,
             CONF_TYPE: TRIGGER_TYPE_DOORBELL_PRESSED,
-            "subtype": "button_0",  # Could support multiple buttons
+            "subtype": "button_0",  # Uses translation: "Doorbell" + "Pressed"
         }
     ]
 
