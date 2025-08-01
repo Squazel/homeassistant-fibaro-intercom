@@ -35,10 +35,7 @@
   },
   "device_automation": {
     "trigger_type": {
-      "doorbell_pressed": "Pressed"
-    },
-    "trigger_subtype": {
-      "button_0": "Doorbell"
+      "doorbell_pressed": "Doorbell pressed"
     }
   }
 }
