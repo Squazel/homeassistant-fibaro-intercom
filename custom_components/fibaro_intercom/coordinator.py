@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import ssl
+import time
 from typing import Any
 
 import websockets
@@ -53,7 +54,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         self.port = port
         self.username = username
         self.password = password
-        self.websocket: websockets.WebSocketServerProtocol | None = None
+        self.websocket: Any = None
         self.token: str | None = None
         self.connected = False
         self.relay_states: dict[int, bool] = {0: False, 1: False}
@@ -61,6 +62,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         self._reconnect_task: asyncio.Task | None = None
         self._listen_task: asyncio.Task | None = None
         self._stop_event = asyncio.Event()
+        self._last_message_time: float = 0
 
         # Subscribe to Home Assistant stop event
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_stop)
@@ -173,6 +175,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         )
 
         self.connected = True
+        self._last_message_time = time.time()
         _LOGGER.info("Connected to FIBARO Intercom at %s:%s", self.host, self.port)
 
         # Update coordinator data with connection status
@@ -215,6 +218,15 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         try:
             async for message in self.websocket:
                 try:
+                    # Update last message time for debugging
+                    self._last_message_time = time.time()
+
+                    # Log all received messages at debug level to track what we're getting
+                    if isinstance(message, bytes):
+                        _LOGGER.debug("Received binary message: %s bytes", len(message))
+                    else:
+                        _LOGGER.debug("Received message: %s", message)
+
                     data = json.loads(message)
                     await self._async_handle_message(data)
                 except json.JSONDecodeError:
@@ -314,7 +326,9 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
             try:
                 _LOGGER.info("Attempting to reconnect to FIBARO Intercom...")
                 await self._async_connect_websocket()
+                _LOGGER.info("Reconnected successfully")
                 backoff = 1  # Reset backoff on successful connection
+                return  # Exit the loop on successful reconnection
             except Exception as ex:
                 if backoff < max_backoff:
                     _LOGGER.info(
