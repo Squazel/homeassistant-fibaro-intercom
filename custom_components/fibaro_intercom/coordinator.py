@@ -233,7 +233,8 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                 except json.JSONDecodeError:
                     _LOGGER.warning("Received invalid JSON: %s", message)
                 except Exception as ex:
-                    _LOGGER.error("Error handling message: %s", ex)
+                    _LOGGER.error("Error handling message: %s", ex, exc_info=True)
+                    _LOGGER.error("Message that caused the error: %s", message)
         except ConnectionClosed as ex:
             if ex.code == 1000:
                 _LOGGER.info("WebSocket connection closed normally")
