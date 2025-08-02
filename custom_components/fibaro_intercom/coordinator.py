@@ -319,13 +319,16 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
             await self._async_handle_button_state_changed(data.get("params", {}))
         elif "error" in data:
             error = data["error"]
-            error_message = error.get("message", "Unknown error")
-            error_code = error.get("code", "Unknown code")
+            error_message = str(error.get("message", "Unknown error"))
+            error_code = str(error.get("code", "Unknown code"))
 
             # Handle expired token or invalid token
+            error_data = (
+                error.get("data") if isinstance(error.get("data"), dict) else {}
+            )
             if (
-                error.get("message") == "Expired"
-                or error.get("data", {}).get("name") == "InvalidToken"
+                str(error.get("message", "")) == "Expired"
+                or str(error_data.get("name", "")) == "InvalidToken"
             ):
                 _LOGGER.info("Token expired or invalid, reconnecting...")
                 self.connected = False
