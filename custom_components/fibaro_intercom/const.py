@@ -13,6 +13,7 @@ WEBSOCKET_PATH = "/wsock"
 
 # JSON-RPC methods
 METHOD_LOGIN = "com.fibaro.intercom.account.login"
+METHOD_REFRESH_TOKEN = "com.fibaro.intercom.account.refreshToken"
 METHOD_RELAY_OPEN = "com.fibaro.intercom.relay.open"
 METHOD_RELAY_STATE_CHANGED = "com.fibaro.intercom.relay.stateChanged"
 METHOD_BUTTON_STATE_CHANGED = "com.fibaro.intercom.device.buttonStateChanged"
