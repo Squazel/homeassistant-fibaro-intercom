@@ -136,16 +136,24 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def async_connect(self) -> None:
         """Connect to the intercom."""
+        _LOGGER.debug(
+            "Connect requested - current status: connected=%s", self.connected
+        )
+
         if self.connected:
+            _LOGGER.debug("Already connected, skipping connection attempt")
             return
 
         try:
             await self._async_connect_websocket()
         except Exception as ex:
-            _LOGGER.error("Failed to connect: %s", ex)
+            _LOGGER.error("Failed to connect: %s", ex, exc_info=True)
             # Start reconnection task
             if not self._reconnect_task or self._reconnect_task.done():
+                _LOGGER.debug("Starting reconnection task due to connection failure")
                 self._reconnect_task = asyncio.create_task(self._async_reconnect_loop())
+            else:
+                _LOGGER.debug("Reconnection task already running")
             raise
 
     async def _async_connect_websocket(self) -> None:
@@ -180,6 +188,8 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def _async_login(self) -> None:
         """Authenticate with the intercom."""
+        _LOGGER.debug("Starting authentication process...")
+
         # Start listening for messages BEFORE sending login request
         if self._listen_task and not self._listen_task.done():
             self._listen_task.cancel()
@@ -199,16 +209,24 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
         # Record authentication timestamp before sending request
         auth_before_login = self._last_authentication_time
+        _LOGGER.debug("Sending login request with ID %d", login_request["id"])
         await self.websocket.send(json.dumps(login_request))
 
         # Wait up to 10 seconds for the login response
-        for _ in range(20):  # Check every 0.5 seconds for 10 seconds total
+        for i in range(20):  # Check every 0.5 seconds for 10 seconds total
             await asyncio.sleep(0.5)
             if self._last_authentication_time > auth_before_login and self.token:
-                _LOGGER.debug("Login successful - token received")
+                _LOGGER.info(
+                    "Login successful - token received: %s...", self.token[:12]
+                )
                 return
+            if i % 4 == 3:  # Log every 2 seconds
+                _LOGGER.debug(
+                    "Still waiting for login response... (%d/10 seconds)", (i + 1) // 2
+                )
 
         # No login response received within timeout
+        _LOGGER.error("Login failed - no response received within 10 seconds")
         raise ConnectionError("Login failed - no response received within 10 seconds")
 
     def _is_token_expired(self) -> bool:
@@ -219,6 +237,8 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def _async_listen_messages(self) -> None:
         """Listen for incoming WebSocket messages."""
+        _LOGGER.debug("Starting message listener")
+
         try:
             async for message in self.websocket:
                 try:
@@ -237,18 +257,30 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                     _LOGGER.error("Message that caused the error: %s", message)
         except ConnectionClosed as ex:
             if ex.code == 1000:
-                _LOGGER.info("WebSocket connection closed normally")
+                _LOGGER.info("WebSocket connection closed normally (code 1000)")
             else:
                 _LOGGER.warning(
                     "WebSocket connection closed with code %s: %s", ex.code, ex.reason
                 )
             self._handle_disconnection()
         except Exception as ex:
-            _LOGGER.warning("WebSocket connection lost due to unexpected error: %s", ex)
+            _LOGGER.warning(
+                "WebSocket connection lost due to unexpected error: %s",
+                ex,
+                exc_info=True,
+            )
             self._handle_disconnection()
+        finally:
+            _LOGGER.debug("Message listener ended")
 
     def _handle_disconnection(self) -> None:
         """Handle WebSocket disconnection and trigger reconnection."""
+        _LOGGER.info(
+            "Handling disconnection - connected: %s, stop_event: %s",
+            self.connected,
+            self._stop_event.is_set(),
+        )
+
         self.connected = False
         # Update coordinator data with disconnection status
         self.async_set_updated_data(
@@ -262,6 +294,10 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
             if not self._reconnect_task or self._reconnect_task.done():
                 _LOGGER.info("Starting reconnection task...")
                 self._reconnect_task = asyncio.create_task(self._async_reconnect_loop())
+            else:
+                _LOGGER.debug("Reconnection task already running, not starting another")
+        else:
+            _LOGGER.debug("Stop event set, not starting reconnection")
 
     async def _async_handle_message(self, data: dict[str, Any]) -> None:
         """Handle incoming WebSocket message."""
@@ -279,23 +315,33 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                 exp_time_ms = float(result["exp_time"])
                 self.token_expires_at = time.time() + (exp_time_ms / 1000.0)
                 _LOGGER.debug(
-                    "Token updated (expires in %d seconds)", exp_time_ms / 1000
+                    "Token updated with explicit expiry - Token: %s..., expires in %d seconds at %s",
+                    self.token[:12] if self.token else "None",
+                    int(exp_time_ms / 1000),
+                    time.ctime(self.token_expires_at),
                 )
             else:
                 self.token_expires_at = time.time() + 900
-                _LOGGER.debug("Token updated (assuming 15min expiry)")
+                _LOGGER.debug(
+                    "Token updated with default expiry - Token: %s..., expires at %s",
+                    self.token[:12] if self.token else "None",
+                    time.ctime(self.token_expires_at),
+                )
 
             # Update authentication timestamp for successful login or token refresh
             self._last_authentication_time = time.time()
 
             if old_token != self.token:
-                _LOGGER.debug(
-                    "Token refreshed: %s... -> %s...",
-                    old_token[:8] if old_token else "None",
-                    self.token[:8] if self.token else "None",
+                _LOGGER.info(
+                    "Token refreshed successfully: %s... -> %s...",
+                    old_token[:12] if old_token else "None",
+                    self.token[:12] if self.token else "None",
                 )
             elif not old_token:
-                _LOGGER.debug("Successfully authenticated with new token")
+                _LOGGER.info(
+                    "Successfully authenticated with new token: %s...",
+                    self.token[:12] if self.token else "None",
+                )
 
             # (Re)start health check monitoring with new token timing
             if self._health_check_task and not self._health_check_task.done():
@@ -396,32 +442,59 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         """Reconnect with exponential backoff."""
         backoff = 1
         max_backoff = 600
+        attempt = 1
+
+        _LOGGER.info("Starting reconnection loop (attempt #%d)", attempt)
 
         while not self._stop_event.is_set() and not self.connected:
             try:
-                _LOGGER.info("Attempting to reconnect to FIBARO Intercom...")
+                _LOGGER.info(
+                    "Attempting to reconnect to FIBARO Intercom (attempt #%d)...",
+                    attempt,
+                )
                 await self._async_connect_websocket()
-                _LOGGER.info("Reconnected successfully")
+                _LOGGER.info("Reconnected successfully after %d attempts", attempt)
                 backoff = 1  # Reset backoff on successful connection
                 return  # Exit the loop on successful reconnection
             except Exception as ex:
+                attempt += 1
                 if backoff < max_backoff:
                     _LOGGER.info(
-                        "Reconnection failed: %s. Retrying in %s seconds", ex, backoff
+                        "Reconnection attempt #%d failed: %s. Retrying in %s seconds",
+                        attempt - 1,
+                        ex,
+                        backoff,
                     )
                 else:
                     _LOGGER.warning(
-                        "Reconnection failed: %s. Retrying in %s seconds (max backoff reached)",
+                        "Reconnection attempt #%d failed: %s. Retrying in %s seconds (max backoff reached)",
+                        attempt - 1,
                         ex,
                         backoff,
                     )
                 try:
+                    _LOGGER.debug(
+                        "Waiting %d seconds before next reconnection attempt", backoff
+                    )
                     await asyncio.wait_for(self._stop_event.wait(), timeout=backoff)
+                    _LOGGER.debug(
+                        "Stop event received during backoff, exiting reconnection loop"
+                    )
                     break  # Stop event was set
                 except asyncio.TimeoutError:
+                    _LOGGER.debug(
+                        "Backoff timeout completed, proceeding with next attempt"
+                    )
                     pass  # Continue with next retry
 
                 backoff = min(backoff * 2, max_backoff)
+
+        if self._stop_event.is_set():
+            _LOGGER.debug("Reconnection loop ended due to stop event")
+        elif self.connected:
+            _LOGGER.debug("Reconnection loop ended - connection established")
+        else:
+            _LOGGER.warning("Reconnection loop ended unexpectedly")
 
     async def async_disconnect(self) -> None:
         """Disconnect from the intercom."""
@@ -466,10 +539,14 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def async_open_relay(self, relay: int, timeout: int | None = None) -> None:
         """Open a relay (fire and forget)."""
+        _LOGGER.debug("Relay %d open requested (timeout: %s)", relay, timeout)
+
         # If not connected, try to reconnect immediately
         if not self.connected or not self.token:
             _LOGGER.warning(
-                "Not connected, attempting immediate reconnection before relay command"
+                "Not connected (connected: %s, token: %s), attempting immediate reconnection before relay command",
+                self.connected,
+                "present" if self.token else "missing",
             )
             try:
                 await self._async_connect_websocket()
@@ -499,12 +576,21 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         }
 
         try:
+            _LOGGER.debug(
+                "Sending relay %d open command (ID: %d, Token: %s...)",
+                relay,
+                request["id"],
+                self.token[:12] if self.token else "None",
+            )
             await self.websocket.send(json.dumps(request))
-            _LOGGER.debug("Sent relay %s open command", relay)
+            _LOGGER.info("Relay %d open command sent successfully", relay)
         except Exception as ex:
-            _LOGGER.error("Failed to open relay %s: %s", relay, ex)
+            _LOGGER.error(
+                "Failed to send relay %s open command: %s", relay, ex, exc_info=True
+            )
             # Mark as disconnected if sending failed
             if self.connected:
+                _LOGGER.debug("Marking as disconnected due to send failure")
                 self.connected = False
                 self.async_set_updated_data(
                     {
@@ -529,6 +615,8 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def _async_health_check_loop(self) -> None:
         """Periodically check token expiration and connection health."""
+        _LOGGER.debug("Starting health check loop")
+
         while not self._stop_event.is_set() and self.connected:
             try:
                 # Calculate next check interval:
@@ -542,25 +630,34 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                         # Check at half the remaining time, but at least every 60 seconds
                         check_interval = min(check_interval, time_until_expiry / 2)
                         _LOGGER.debug(
-                            "Next health check in %d seconds (token expires in %d seconds)",
+                            "Next health check in %d seconds (token expires in %d seconds at %s)",
                             int(check_interval),
                             int(time_until_expiry),
+                            time.ctime(self.token_expires_at),
                         )
+                    else:
+                        _LOGGER.warning("Token appears to be already expired!")
 
                 await asyncio.wait_for(self._stop_event.wait(), timeout=check_interval)
                 if self._stop_event.is_set():
+                    _LOGGER.debug("Health check loop stopping due to stop event")
                     break
             except asyncio.TimeoutError:
                 pass  # Continue with health check
 
             if not self.connected or not self.websocket:
+                _LOGGER.debug("Health check loop stopping - connection lost")
                 break
 
             try:
                 # Check if token is already expired - if so, trigger full reconnection to be safe
                 if self._is_token_expired():
                     _LOGGER.warning(
-                        "Token has expired (not expected). Triggering full reconnection..."
+                        "Token has expired (not expected). Current time: %s, Expiry: %s. Triggering full reconnection...",
+                        time.ctime(time.time()),
+                        time.ctime(self.token_expires_at)
+                        if self.token_expires_at
+                        else "Unknown",
                     )
                     self._handle_disconnection()
                     break
@@ -577,24 +674,42 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
                     # Record when we sent the refresh request
                     auth_before_refresh = self._last_authentication_time
-                    _LOGGER.debug("Performing health check via token refresh")
+                    _LOGGER.debug(
+                        "Performing health check via token refresh (ID: %d, Token: %s...)",
+                        refresh_request["id"],
+                        self.token[:12] if self.token else "None",
+                    )
                     await self.websocket.send(json.dumps(refresh_request))
 
                     # Wait up to 10 seconds for the token refresh response
-                    for _ in range(20):  # Check every 0.5 seconds for 10 seconds total
+                    for i in range(20):  # Check every 0.5 seconds for 10 seconds total
                         await asyncio.sleep(0.5)
                         if self._last_authentication_time > auth_before_refresh:
                             _LOGGER.debug("Health check successful - token refreshed")
                             break
+                        if i % 4 == 3:  # Log every 2 seconds
+                            _LOGGER.debug(
+                                "Still waiting for token refresh response... (%d/10 seconds)",
+                                (i + 1) // 2,
+                            )
                     else:
                         # No token refresh received within timeout
                         _LOGGER.warning(
-                            "Health check failed - no token refresh received within 10 seconds"
+                            "Health check failed - no token refresh received within 10 seconds. "
+                            "Last auth time: %s, Request sent at: %s",
+                            time.ctime(self._last_authentication_time),
+                            time.ctime(auth_before_refresh),
                         )
                         self._handle_disconnection()
                         break
 
             except Exception as ex:
-                _LOGGER.warning("Health check failed: %s. Triggering reconnection.", ex)
+                _LOGGER.warning(
+                    "Health check failed with exception: %s. Triggering reconnection.",
+                    ex,
+                    exc_info=True,
+                )
                 self._handle_disconnection()
                 break
+
+        _LOGGER.debug("Health check loop ended")
