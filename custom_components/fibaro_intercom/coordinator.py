@@ -266,7 +266,11 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
     async def _async_handle_message(self, data: dict[str, Any]) -> None:
         """Handle incoming WebSocket message."""
         # Check if this is a login or token refresh response and update our token
-        if "result" in data and "token" in data.get("result", {}):
+        if (
+            "result" in data
+            and isinstance(data["result"], dict)
+            and "token" in data["result"]
+        ):
             result = data["result"]
             old_token = self.token
             self.token = result["token"]
