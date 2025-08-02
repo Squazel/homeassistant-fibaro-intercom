@@ -271,7 +271,7 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
             self.token = result["token"]
 
             if "exp_time" in result:
-                exp_time_ms = result["exp_time"]
+                exp_time_ms = float(result["exp_time"])
                 self.token_expires_at = time.time() + (exp_time_ms / 1000.0)
                 _LOGGER.debug(
                     "Token updated (expires in %d seconds)", exp_time_ms / 1000
