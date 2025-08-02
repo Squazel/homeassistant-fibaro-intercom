@@ -11,10 +11,11 @@ A custom Lovelace card for FIBARO Intercom that wraps the native `picture-glance
 
 ## Features
 
-- **Camera Display**: Uses Home Assistant's built-in picture-entity card for reliable camera viewing
+- **Camera Display**: Uses Home Assistant's built-in picture-glance card for reliable camera viewing
 - **Relay Controls**: Two buttons for controlling door (relay 0) and gate (relay 1)
+- **Connection Status**: Shows integration connection status
 - **Automatic Configuration**: Wraps the native picture-glance card with sensible defaults
-- **Customizable**: Configure labels and button styling
+- **Customizable**: Configure labels and button styling via picture-glance options
 - **Simple Integration**: Works seamlessly with existing FIBARO Intercom entities
 
 ## Preview
@@ -68,6 +69,7 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
+connection_status_entity: binary_sensor.fibaro_intercom_connection_status
 title: "Front Door Intercom"
 ```
 
@@ -78,6 +80,7 @@ title: "Front Door Intercom"
 | `camera_entity` | string | **Required** | Camera entity ID |
 | `relay_0_entity` | string | `binary_sensor.fibaro_intercom_relay_0` | Relay 0 binary sensor entity |
 | `relay_1_entity` | string | `binary_sensor.fibaro_intercom_relay_1` | Relay 1 binary sensor entity |
+| `connection_status_entity` | string | `binary_sensor.fibaro_intercom_connection_status` | Connection status binary sensor entity |
 | `title` | string | `FIBARO Intercom` | Card title |
 | `camera_view` | string | `auto` | Camera view mode (auto, live) |
 | `fit_mode` | string | `cover` | How the camera image fits (cover, contain, fill) |
@@ -88,7 +91,7 @@ title: "Front Door Intercom"
 
 ### Camera View
 
-- **Picture Entity Card**: Uses Home Assistant's built-in picture-entity card for optimal camera display
+- **Picture-Glance Card**: Uses Home Assistant's built-in picture-glance card for optimal camera display
 - **Live Stream**: Click the camera to open the full camera dialog with live stream
 - **Automatic Updates**: Camera view updates automatically when entity state changes
 
@@ -114,7 +117,7 @@ title: "Front Door Intercom"
 
 ### Relay Buttons Not Working
 
-1. Ensure the relay switch entities exist and are available
+1. Ensure the relay binary sensor entities exist and are available
 2. Check that the FIBARO Intercom service is registered
 3. Verify network connectivity to the intercom device
 
@@ -135,11 +138,12 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.front_door_intercom
 relay_0_entity: binary_sensor.front_door_relay_0
 relay_1_entity: binary_sensor.front_door_relay_1
+connection_status_entity: binary_sensor.front_door_connection_status
 ```
 
 ### Different Camera Settings
 
-All camera-specific settings (live stream, refresh rates, image quality) are handled by the picture-entity card and can be configured through Home Assistant's camera entity settings.
+All camera-specific settings (live stream, refresh rates, image quality) are handled by the picture-glance card and can be configured through Home Assistant's camera entity settings.
 
 ### Custom Styling
 

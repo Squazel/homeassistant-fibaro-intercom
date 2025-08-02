@@ -106,6 +106,7 @@ type: custom:fibaro-intercom-card
 camera_entity: camera.fibaro_intercom_camera
 relay_0_entity: binary_sensor.fibaro_intercom_relay_0
 relay_1_entity: binary_sensor.fibaro_intercom_relay_1
+connection_status_entity: binary_sensor.fibaro_intercom_connection_status
 ```
 
 For complete card documentation, configuration options, and examples, see [`custom_components/fibaro_intercom/frontend/README.md`](custom_components/fibaro_intercom/frontend/README.md).
