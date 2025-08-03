@@ -175,17 +175,6 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
         # Authenticate (this will start the message listener)
         await self._async_login()
 
-        self.connected = True
-        _LOGGER.info("Connected to FIBARO Intercom at %s:%s", self.host, self.port)
-
-        # Update coordinator data with connection status
-        self.async_set_updated_data(
-            {
-                "connected": True,
-                "relay_states": self.relay_states,
-            }
-        )
-
     async def _async_login(self) -> None:
         """Authenticate with the intercom."""
         _LOGGER.debug("Starting authentication process...")
@@ -343,7 +332,21 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                     self.token[:12] if self.token else "None",
                 )
 
-            # (Re)start health check monitoring with new token timing
+            # Set connected to true and start/restart health check for any token (login or refresh)
+            if not self.connected:
+                self.connected = True
+                _LOGGER.info(
+                    "Connected to FIBARO Intercom at %s:%s", self.host, self.port
+                )
+                # Update coordinator data with connection status
+                self.async_set_updated_data(
+                    {
+                        "connected": True,
+                        "relay_states": self.relay_states,
+                    }
+                )
+
+            # Start health check monitoring with new token timing
             if self._health_check_task and not self._health_check_task.done():
                 self._health_check_task.cancel()
             self._health_check_task = self.hass.async_create_background_task(
@@ -615,9 +618,13 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
 
     async def _async_health_check_loop(self) -> None:
         """Periodically check token expiration and connection health."""
-        _LOGGER.debug("Starting health check loop")
+        _LOGGER.debug(
+            "Starting health check loop - connected: %s, stop_event: %s",
+            self.connected,
+            self._stop_event.is_set(),
+        )
 
-        while not self._stop_event.is_set() and self.connected:
+        while not self._stop_event.is_set():
             try:
                 # Calculate next check interval:
                 # - Every 60 seconds normally
@@ -646,8 +653,20 @@ class FibaroIntercomCoordinator(DataUpdateCoordinator):
                 pass  # Continue with health check
 
             if not self.connected or not self.websocket:
-                _LOGGER.debug("Health check loop stopping - connection lost")
-                break
+                _LOGGER.warning(
+                    "Health check detected disconnection - waiting for reconnection..."
+                )
+                # Wait a bit longer when disconnected, then check again
+                try:
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=30)
+                    if self._stop_event.is_set():
+                        _LOGGER.debug(
+                            "Health check loop stopping due to stop event during disconnection wait"
+                        )
+                        break
+                except asyncio.TimeoutError:
+                    pass  # Continue checking
+                continue  # Skip health check operations when disconnected
 
             try:
                 # Check if token is already expired - if so, trigger full reconnection to be safe
