@@ -53,26 +53,32 @@ class FibaroIntercomCard extends HTMLElement {
       }
     ];
     
-    // Build picture-glance configuration with defaults and allow overrides
+    // Build picture-glance configuration with defaults and allow overrides.
+    // NOTE: picture-glance does NOT (currently) support a fit_mode option; avoid
+    // passing unknown keys that might interfere with internal size calculations.
+    const { fit_mode: _ignoredFitMode, ...pgOverrides } = config.picture_glance_options || {};
     this._config = {
       type: 'picture-glance',
       title: config.title || 'FIBARO Intercom',
       camera_view: config.camera_view || 'auto',
-      fit_mode: config.fit_mode || 'cover',
       camera_image: config.camera_entity,
       entity: config.camera_entity,
       entities: config.entities || defaultEntities,
-      // Allow any picture-glance options to be overridden
-      ...config.picture_glance_options
+      ...pgOverrides
     };
-    
-    // Try to create the card immediately, with retry if needed
-    this._createPictureGlanceCard();
-    
-    // If initial creation failed, try again after a short delay
-    if (!this._pictureGlanceCard) {
-      setTimeout(() => this._createPictureGlanceCard(), 100);
+
+    // If we already have a card instance, just forward the new config instead of recreating.
+    if (this._pictureGlanceCard && typeof this._pictureGlanceCard.setConfig === 'function') {
+      try {
+        this._pictureGlanceCard.setConfig(this._config);
+        return; // Reuse existing card
+      } catch (e) {
+        console.warn('FIBARO Intercom Card: reusing existing card failed, recreating', e);
+        this._pictureGlanceCard = null;
+      }
     }
+
+    this._createPictureGlanceCard();
   }
 
   set hass(hass) {
@@ -83,52 +89,104 @@ class FibaroIntercomCard extends HTMLElement {
   }
 
   _createPictureGlanceCard() {
-    if (!this._config.camera_image) {
+    if (!this._config?.camera_image) {
       console.warn('FIBARO Intercom Card: No camera_image configured');
       return;
     }
-    
-    console.log('FIBARO Intercom Card: Attempting to create picture-glance card');
-    
-    // Clear shadow root first
-    this.shadowRoot.innerHTML = '';
-    
-    try {
-      // Use Home Assistant's card creation helper instead of direct element creation
-      const helpers = window.loadCardHelpers && window.loadCardHelpers();
-      
-      if (helpers) {
-        console.log('FIBARO Intercom Card: Using loadCardHelpers to create card');
-        helpers.then((cardHelpers) => {
-          try {
-            this._pictureGlanceCard = cardHelpers.createCardElement(this._config);
-            console.log('FIBARO Intercom Card: Created card using cardHelpers');
-            
-            if (this._hass) {
-              this._pictureGlanceCard.hass = this._hass;
-              console.log('FIBARO Intercom Card: Set hass on picture-glance card');
-            }
-            
-            // Append the card
-            this.shadowRoot.appendChild(this._pictureGlanceCard);
-            console.log('FIBARO Intercom Card: Successfully created and appended picture-glance card');
-          } catch (helperError) {
-            console.warn('FIBARO Intercom Card: cardHelpers failed, falling back to direct creation:', helperError);
-            this._createCardDirectly();
-          }
-        }).catch((error) => {
-          console.warn('FIBARO Intercom Card: loadCardHelpers failed, falling back to direct creation:', error);
-          this._createCardDirectly();
-        });
-      } else {
-        console.log('FIBARO Intercom Card: loadCardHelpers not available, using direct creation');
-        this._createCardDirectly();
+
+    // Guard against multiple concurrent creations (race when HA calls setConfig rapidly)
+    if (this._creating) {
+      this._pendingRecreate = true;
+      return;
+    }
+    this._creating = true;
+    const creationToken = (this._creationToken = (this._creationToken || 0) + 1);
+
+    const finalize = (card) => {
+      // If a newer creation started, discard this one
+      if (creationToken !== this._creationToken) return;
+
+      // Clear previous content (only now, to avoid empty period while async loads)
+      this.shadowRoot.innerHTML = '';
+      this._pictureGlanceCard = card;
+      if (this._hass) {
+        this._pictureGlanceCard.hass = this._hass;
       }
-      
+      this.shadowRoot.appendChild(this._pictureGlanceCard);
+      this._creating = false;
+      if (this._pendingRecreate) {
+        // A newer config arrived while we were creating; recreate once more.
+        this._pendingRecreate = false;
+        this._createPictureGlanceCard();
+      }
+    };
+
+    try {
+      const helpersPromise = window.loadCardHelpers && window.loadCardHelpers();
+      if (helpersPromise) {
+        helpersPromise
+          .then((helpers) => {
+            if (creationToken !== this._creationToken) return; // stale
+            let card;
+            try {
+              card = helpers.createCardElement(this._config);
+            } catch (e) {
+              console.warn('FIBARO Intercom Card: helpers.createCardElement failed, fallback to direct element', e);
+              card = document.createElement('hui-picture-glance-card');
+            }
+            // Ensure config applied
+            if (typeof card.setConfig === 'function') {
+              try { card.setConfig(this._config); } catch (e) { console.error('FIBARO Intercom Card: setConfig failed', e); }
+            }
+            finalize(card);
+          })
+          .catch((e) => {
+            console.warn('FIBARO Intercom Card: loadCardHelpers promise rejected, fallback to direct creation', e);
+            const card = document.createElement('hui-picture-glance-card');
+            this._configureDirectCard(card, finalize);
+          });
+      } else {
+        // Fallback: direct element now, attempt a delayed helper usage later (common when card loads early)
+        const card = document.createElement('hui-picture-glance-card');
+        this._configureDirectCard(card, finalize);
+        // Try again shortly with helpers if they become available (single retry)
+        setTimeout(() => {
+          if (!this._pictureGlanceCard || creationToken !== this._creationToken) return;
+          if (window.loadCardHelpers) {
+            window.loadCardHelpers().then((helpers) => {
+              // If helpers are now ready and we used a raw element with a setConfig, nothing else required.
+              // We intentionally do not recreate to avoid flicker.
+            });
+          }
+        }, 250);
+      }
     } catch (error) {
-      console.error('FIBARO Intercom Card: Failed to create picture-glance card:', error);
+      console.error('FIBARO Intercom Card: Unexpected error during creation', error);
+      this._creating = false;
       this._showErrorCard(error);
     }
+  }
+
+  _configureDirectCard(card, finalizeCb) {
+    // Apply config after a microtask to allow element definition upgrade
+    queueMicrotask(() => {
+      try {
+        if (typeof card.setConfig !== 'function') {
+          // If the element hasn't upgraded yet, try again next frame
+          requestAnimationFrame(() => {
+            if (typeof card.setConfig === 'function') {
+              try { card.setConfig(this._config); } catch (e) { console.error(e); }
+            }
+            finalizeCb(card);
+          });
+          return;
+        }
+        card.setConfig(this._config);
+      } catch (e) {
+        console.error('FIBARO Intercom Card: direct card setConfig error', e);
+      }
+      finalizeCb(card);
+    });
   }
 
   _createCardDirectly() {
@@ -185,7 +243,10 @@ class FibaroIntercomCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 3; // Standard picture-glance card size
+    if (this._pictureGlanceCard && typeof this._pictureGlanceCard.getCardSize === 'function') {
+      try { return this._pictureGlanceCard.getCardSize(); } catch (_) { /* ignore */ }
+    }
+    return 3; // Fallback size
   }
 
   static getConfigElement() {
